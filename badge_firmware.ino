@@ -6,7 +6,9 @@
  *   1 = Idle eyes (blink + look around)
  *   2 = Custom BLE text scroll
  *   3 = Matrix rain   4 = Plasma   5 = Fire   6 = Sparkle
- *   7 = Auto-cycle (rotates 3-6 + eyes every 10s)
+ *   7 = Auto-cycle (rotates all animations every 10s)
+ *   8 = Shapes  9 = Game of Life  10 = Bounce  11 = Equalizer
+ *   12 = Radar  13 = Comet        14 = Stars   15 = Pulse
  *
  * BLE (Nordic UART Service — use "Serial Bluetooth Terminal" app
  * or nRF Connect on phone, no custom app needed):
@@ -31,7 +33,7 @@
 #define HEIGHT        8
 #define NUM_LEDS      (WIDTH * HEIGHT)
 #define SERPENTINE    true      // false if your PCB is progressive-wired
-#define NAME_TEXT     "Aahans"
+#define NAME_TEXT     "AYUSHMAAN"
 #define SCROLL_MS     70        // lower = faster scroll
 #define EYES_DWELL_MS 8000      // eyes duration between name scrolls
 
@@ -40,7 +42,8 @@ CRGB fgColor = CRGB(0x39, 0xFF, 0x14);   // neon green
 uint8_t brightness = 30;
 
 // ---------------- STATE ----------------
-enum Mode { MODE_NAME, MODE_EYES, MODE_TEXT, MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_CYCLE };
+enum Mode { MODE_NAME, MODE_EYES, MODE_TEXT, MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_CYCLE,
+            MODE_SHAPES, MODE_LIFE, MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE };
 volatile Mode mode = MODE_NAME;
 String bleText = "";
 volatile bool newBleMsg = false;
@@ -135,7 +138,7 @@ int textPixelWidth(const String &s) { return s.length() * 6; } // 5px + 1 gap
 // returns true when one full pass is complete
 bool drawScrollFrame(const String &s) {
   FastLED.clear();
-  int xStart = WIDTH - scrollOffset;
+  int xStart = scrollOffset - textPixelWidth(s);   // enters left, moves right
   for (uint16_t ci = 0; ci < s.length(); ci++) {
     int cx = xStart + ci * 6;
     if (cx <= -6 || cx >= WIDTH) continue;
@@ -257,6 +260,171 @@ void drawSparkleFrame() {
   FastLED.show();
 }
 
+// 8: Shapes — random geometric outlines popping in, fading out
+uint32_t nextShapeAt = 0;
+
+void drawShapesFrame() {
+  fadeToBlackBy(leds, NUM_LEDS, 26);
+  if (millis() > nextShapeAt) {
+    nextShapeAt = millis() + 300 + random16(600);
+    CRGB c = CHSV(random8(), 190, 255);
+    int8_t cx = random8(WIDTH), cy = random8(HEIGHT);
+    switch (random8(3)) {
+      case 0: {                                  // rectangle outline
+        int8_t w = 3 + random8(4), h = 3 + random8(2);
+        for (int8_t x = 0; x < w; x++) { setPx(cx + x, cy, c); setPx(cx + x, cy + h - 1, c); }
+        for (int8_t y = 0; y < h; y++) { setPx(cx, cy + y, c); setPx(cx + w - 1, cy + y, c); }
+        break;
+      }
+      case 1:                                    // cross
+        for (int8_t d = -2; d <= 2; d++) { setPx(cx + d, cy, c); setPx(cx, cy + d, c); }
+        break;
+      case 2:                                    // diamond
+        for (int8_t d = 0; d <= 2; d++) {
+          setPx(cx + d, cy + (2 - d), c); setPx(cx - d, cy + (2 - d), c);
+          setPx(cx + d, cy - (2 - d), c); setPx(cx - d, cy - (2 - d), c);
+        }
+        break;
+    }
+  }
+  FastLED.show();
+}
+
+// 9: Game of Life — evolves with wraparound, reseeds when dead/stagnant
+uint8_t lifeGrid[WIDTH][HEIGHT];
+uint16_t lifeGen = 0;
+
+void seedLife() {
+  for (uint8_t x = 0; x < WIDTH; x++)
+    for (uint8_t y = 0; y < HEIGHT; y++)
+      lifeGrid[x][y] = (random8() < 85) ? 1 : 0;
+  lifeGen = 0;
+}
+
+void drawLifeFrame() {
+  uint8_t nextG[WIDTH][HEIGHT];
+  uint16_t alive = 0;
+  for (uint8_t x = 0; x < WIDTH; x++)
+    for (uint8_t y = 0; y < HEIGHT; y++) {
+      uint8_t n = 0;
+      for (int8_t dx = -1; dx <= 1; dx++)
+        for (int8_t dy = -1; dy <= 1; dy++) {
+          if (!dx && !dy) continue;
+          n += lifeGrid[(x + dx + WIDTH) % WIDTH][(y + dy + HEIGHT) % HEIGHT];
+        }
+      nextG[x][y] = lifeGrid[x][y] ? (n == 2 || n == 3) : (n == 3);
+      alive += nextG[x][y];
+    }
+  memcpy(lifeGrid, nextG, sizeof(lifeGrid));
+  lifeGen++;
+  if (alive < 3 || lifeGen > 120) seedLife();
+
+  fadeToBlackBy(leds, NUM_LEDS, 90);             // dying cells leave trails
+  for (uint8_t x = 0; x < WIDTH; x++)
+    for (uint8_t y = 0; y < HEIGHT; y++)
+      if (lifeGrid[x][y]) setPx(x, y, fgColor);
+  FastLED.show();
+}
+
+// 10: Bounce — two balls with trails
+float ballX[2] = {2, 11}, ballY[2] = {1, 5};
+float ballVX[2] = {0.42, -0.31}, ballVY[2] = {0.27, -0.35};
+
+void drawBounceFrame() {
+  fadeToBlackBy(leds, NUM_LEDS, 42);
+  for (uint8_t i = 0; i < 2; i++) {
+    ballX[i] += ballVX[i]; ballY[i] += ballVY[i];
+    if (ballX[i] <= 0 || ballX[i] >= WIDTH - 1)  { ballVX[i] = -ballVX[i]; ballX[i] = constrain(ballX[i], 0.0f, (float)(WIDTH - 1)); }
+    if (ballY[i] <= 0 || ballY[i] >= HEIGHT - 1) { ballVY[i] = -ballVY[i]; ballY[i] = constrain(ballY[i], 0.0f, (float)(HEIGHT - 1)); }
+    setPx((int8_t)ballX[i], (int8_t)ballY[i], i ? fgColor : CRGB(CRGB::White));
+  }
+  FastLED.show();
+}
+
+// 11: Equalizer — noise-driven bars, green base / amber mid / red peak
+uint8_t eqLevel[WIDTH];
+
+void drawEqFrame() {
+  FastLED.clear();
+  for (uint8_t x = 0; x < WIDTH; x++) {
+    uint8_t target = inoise8(x * 35, millis() / 3) / 28;   // 0..9
+    if (target > HEIGHT) target = HEIGHT;
+    if (eqLevel[x] < target) eqLevel[x]++;
+    else if (eqLevel[x] > target) eqLevel[x]--;
+    for (uint8_t h = 0; h < eqLevel[x]; h++) {
+      CRGB c = (h >= 6) ? CRGB(CRGB::Red) : (h >= 4) ? CRGB(255, 160, 0) : fgColor;
+      setPx(x, HEIGHT - 1 - h, c);
+    }
+  }
+  FastLED.show();
+}
+
+// 12: Radar — expanding ripple rings from random points
+struct Ripple { int8_t x, y; uint8_t r; bool on; };
+Ripple ripples[3];
+
+void drawRadarFrame() {
+  fadeToBlackBy(leds, NUM_LEDS, 55);
+  if (random8() < 18) {
+    for (uint8_t i = 0; i < 3; i++)
+      if (!ripples[i].on) {
+        ripples[i].x = random8(WIDTH); ripples[i].y = random8(HEIGHT);
+        ripples[i].r = 0; ripples[i].on = true;
+        break;
+      }
+  }
+  for (uint8_t i = 0; i < 3; i++) {
+    if (!ripples[i].on) continue;
+    int16_t rOut = ripples[i].r * ripples[i].r;
+    int16_t rIn  = (ripples[i].r - 1) * (ripples[i].r - 1);
+    for (int8_t x = 0; x < WIDTH; x++)
+      for (int8_t y = 0; y < HEIGHT; y++) {
+        int16_t d2 = (x - ripples[i].x) * (x - ripples[i].x) + (y - ripples[i].y) * (y - ripples[i].y);
+        if (d2 <= rOut && d2 > rIn) setPx(x, y, fgColor);
+      }
+    ripples[i].r++;
+    if (ripples[i].r > 12) ripples[i].on = false;
+  }
+  FastLED.show();
+}
+
+// 13: Comet — smooth full-height scanner sweep, hue drifts
+void drawCometFrame() {
+  fadeToBlackBy(leds, NUM_LEDS, 38);
+  uint8_t pos = beatsin8(24, 0, WIDTH - 1);
+  CRGB c = CHSV(millis() / 40, 255, 255);
+  for (uint8_t y = 0; y < HEIGHT; y++) setPx(pos, y, c);
+  FastLED.show();
+}
+
+// 14: Stars — twinkling starfield with respawn
+struct Star { uint8_t x, y, b; int8_t db; };
+Star stars[14];
+
+void drawStarsFrame() {
+  FastLED.clear();
+  for (uint8_t i = 0; i < 14; i++) {
+    int16_t nb = stars[i].b + stars[i].db;
+    if (nb >= 240) { nb = 240; stars[i].db = -(int8_t)(2 + random8(4)); }
+    if (nb <= 0) {
+      stars[i].x = random8(WIDTH); stars[i].y = random8(HEIGHT);
+      stars[i].db = (int8_t)(2 + random8(5)); nb = 1;
+    }
+    stars[i].b = (uint8_t)nb;
+    setPx(stars[i].x, stars[i].y, CRGB(stars[i].b, stars[i].b, qadd8(stars[i].b, 12)));
+  }
+  FastLED.show();
+}
+
+// 15: Pulse — whole panel breathing in fgColor
+void drawPulseFrame() {
+  uint8_t v = beatsin8(16, 8, 160);
+  CRGB c = fgColor;
+  c.nscale8_video(v);
+  fill_solid(leds, NUM_LEDS, c);
+  FastLED.show();
+}
+
 // ---------------- BLE (Nordic UART Service) ----------------
 #define NUS_SERVICE "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NUS_RX      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -274,7 +442,7 @@ class SrvCallback : public BLEServerCallbacks {
 };
 
 void setupBLE() {
-  BLEDevice::init("BADGE-AYUSHMAAN");
+  BLEDevice::init("BADGE-AAHANS");
   BLEServer *server = BLEDevice::createServer();
   server->setCallbacks(new SrvCallback());
   BLEService *svc = server->createService(NUS_SERVICE);
@@ -303,7 +471,7 @@ void handleBleMsg() {
     fgColor = CRGB((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
   } else if (msg.startsWith("M:")) {
     int m = msg.substring(2).toInt();
-    if (m >= 0 && m <= 7) { mode = (Mode)m; scrollOffset = 0; }
+    if (m >= 0 && m <= 15) { mode = (Mode)m; scrollOffset = 0; }
   } else {
     bleText = msg;
     mode = MODE_TEXT;
@@ -350,27 +518,44 @@ void loop() {
       delay(SCROLL_MS);
       break;
 
-    case MODE_RAIN:    drawRainFrame();    delay(65); break;
-    case MODE_PLASMA:  drawPlasmaFrame();  delay(30); break;
-    case MODE_FIRE:    drawFireFrame();    delay(45); break;
-    case MODE_SPARKLE: drawSparkleFrame(); delay(40); break;
-
     case MODE_CYCLE: {
       static uint8_t sub = 0;
       static uint32_t nextSwitch = 0;
+      static const Mode subs[] = {
+        MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_SHAPES, MODE_LIFE,
+        MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE, MODE_EYES
+      };
       if (millis() > nextSwitch) {
-        sub = (sub + 1) % 5;
+        sub = (sub + 1) % (sizeof(subs) / sizeof(subs[0]));
         nextSwitch = millis() + 10000;   // 10s per animation
         FastLED.clear();
       }
-      switch (sub) {
-        case 0: drawRainFrame();    delay(65); break;
-        case 1: drawPlasmaFrame();  delay(30); break;
-        case 2: drawFireFrame();    delay(45); break;
-        case 3: drawSparkleFrame(); delay(40); break;
-        case 4: drawEyesFrame();    delay(40); break;
-      }
+      runAnim(subs[sub]);
       break;
     }
+
+    default:          // all plain animation modes
+      runAnim(mode);
+      break;
+  }
+}
+
+// dispatch one animation frame + its frame delay
+void runAnim(Mode m) {
+  switch (m) {
+    case MODE_EYES:    drawEyesFrame();    delay(40);  break;
+    case MODE_RAIN:    drawRainFrame();    delay(65);  break;
+    case MODE_PLASMA:  drawPlasmaFrame();  delay(30);  break;
+    case MODE_FIRE:    drawFireFrame();    delay(45);  break;
+    case MODE_SPARKLE: drawSparkleFrame(); delay(40);  break;
+    case MODE_SHAPES:  drawShapesFrame();  delay(40);  break;
+    case MODE_LIFE:    drawLifeFrame();    delay(140); break;
+    case MODE_BOUNCE:  drawBounceFrame();  delay(35);  break;
+    case MODE_EQ:      drawEqFrame();      delay(40);  break;
+    case MODE_RADAR:   drawRadarFrame();   delay(70);  break;
+    case MODE_COMET:   drawCometFrame();   delay(25);  break;
+    case MODE_STARS:   drawStarsFrame();   delay(40);  break;
+    case MODE_PULSE:   drawPulseFrame();   delay(30);  break;
+    default: break;
   }
 }

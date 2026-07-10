@@ -3,237 +3,417 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BADGE // CONTROL</title>
+<title>aahans</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --panel: #111111;
-    --line: #222222;
-    --green: #39FF14;
-    --dim: #666666;
-    --text: #e0e0e0;
+    --bg:#0A0B09; --line:#1E211C; --green:#39FF14; --dim:#575C54; --text:#CDD1CA;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Space Mono', monospace; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 20px;
-    max-width: 480px;
-    margin: 0 auto;
-    background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
-    background-size: 14px 14px;
-  }
-  header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 0; border-bottom: 1px solid var(--line); margin-bottom: 20px;
-  }
-  h1 { font-size: 15px; letter-spacing: 3px; font-weight: 700; }
-  h1 span { color: var(--green); }
-  #status {
-    font-size: 10px; letter-spacing: 2px; color: var(--dim);
-    display: flex; align-items: center; gap: 6px;
-  }
-  #dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #333; transition: all .3s;
-  }
-  #dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Space Mono',monospace; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); min-height:100vh; padding:26px 22px 48px; max-width:440px; margin:0 auto; }
 
-  .section { margin-bottom: 22px; }
-  .label {
-    font-size: 9px; letter-spacing: 3px; color: var(--dim);
-    margin-bottom: 8px; text-transform: uppercase;
-  }
+  header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:30px; }
+  h1 { font-size:12px; font-weight:400; letter-spacing:5px; color:var(--text); }
+  h1 span { color:var(--green); animation:caret 1.2s steps(1) infinite; }
+  @keyframes caret { 50%{opacity:0} }
+  #status { font-size:9px; letter-spacing:2px; color:var(--dim); display:flex; align-items:center; gap:7px; }
+  #dot { width:5px; height:5px; border-radius:50%; background:#2a2d28; }
+  #dot.on { background:var(--green); animation:br 2.8s ease-in-out infinite; }
+  @keyframes br { 0%,100%{box-shadow:0 0 2px 0 rgba(57,255,20,.4)} 50%{box-shadow:0 0 9px 2px rgba(57,255,20,.8)} }
 
-  button {
-    background: var(--panel); border: 1px solid var(--line);
-    color: var(--text); font-size: 11px; letter-spacing: 1px;
-    padding: 12px; cursor: pointer; transition: all .15s;
-    text-transform: uppercase;
-  }
-  button:active { transform: scale(.97); }
-  button:hover { border-color: var(--green); }
-  button.primary {
-    width: 100%; border-color: var(--green); color: var(--green);
-    font-weight: 700; letter-spacing: 3px; padding: 15px;
-  }
-  button.primary.connected { background: var(--green); color: #000; }
+  canvas { display:block; width:100%; margin-bottom:6px; }
+  .cap { font-size:8px; letter-spacing:2px; color:var(--dim); display:flex; justify-content:space-between; margin-bottom:34px; }
 
-  .row { display: flex; gap: 8px; }
+  #connectBtn {
+    width:100%; padding:15px 0; margin-bottom:36px;
+    background:none; border:none; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    color:var(--green); font-size:11px; letter-spacing:5px; cursor:pointer;
+    animation: glow 3.2s ease-in-out infinite;
+  }
+  @keyframes glow { 0%,100%{text-shadow:none} 50%{text-shadow:0 0 12px rgba(57,255,20,.7)} }
+  #connectBtn.connected { color:var(--dim); animation:none; letter-spacing:3px; }
+  #connectBtn:active { opacity:.6; }
+
+  .sec { margin-bottom:32px; }
+  .lbl { font-size:8px; letter-spacing:3px; color:var(--dim); margin-bottom:12px; }
+  .lbl .v { float:right; color:var(--green); }
+
+  .row { display:flex; gap:14px; align-items:flex-end; }
   input[type=text] {
-    flex: 1; background: var(--panel); border: 1px solid var(--line);
-    color: var(--green); font-size: 13px; padding: 12px;
-    letter-spacing: 1px; outline: none; text-transform: uppercase;
+    flex:1; background:none; border:none; border-bottom:1px solid var(--line);
+    color:var(--green); font-size:13px; letter-spacing:2px; padding:8px 0; outline:none;
+    text-transform:uppercase; border-radius:0;
   }
-  input[type=text]:focus { border-color: var(--green); }
-  input[type=text]::placeholder { color: #444; text-transform: none; }
-
-  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .grid button { font-size: 9px; padding: 12px 4px; }
-  .grid button.active { border-color: var(--green); color: var(--green); }
-
-  input[type=range] {
-    width: 100%; -webkit-appearance: none; height: 2px;
-    background: var(--line); outline: none;
+  input[type=text]:focus { border-color:var(--green); }
+  input[type=text]::placeholder { color:#383c36; text-transform:lowercase; letter-spacing:1px; }
+  .row button {
+    background:none; border:none; color:var(--dim); font-size:10px; letter-spacing:2px;
+    padding:8px 0; cursor:pointer;
   }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px;
-    background: var(--green); cursor: pointer; border-radius: 0;
-  }
-  .val { font-size: 10px; color: var(--green); float: right; }
+  .row button:active { color:var(--green); }
 
-  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-  .swatch {
-    aspect-ratio: 1; border: 1px solid var(--line); cursor: pointer;
-    transition: all .15s;
+  #modes { display:flex; flex-wrap:wrap; gap:10px 20px; }
+  #modes button {
+    background:none; border:none; color:var(--dim); font-size:11px; letter-spacing:2px;
+    cursor:pointer; padding:3px 0; transition:color .15s;
   }
-  .swatch:hover, .swatch.active { border-color: #fff; transform: scale(1.08); }
+  #modes button::before { content:'· '; color:transparent; }
+  #modes button.active { color:var(--green); }
+  #modes button.active::before { color:var(--green); animation:caret 1.6s steps(1) infinite; }
+  #modes button:active { color:var(--text); }
 
-  #log {
-    font-size: 9px; color: var(--dim); letter-spacing: 1px;
-    border-top: 1px solid var(--line); padding-top: 10px;
-    min-height: 16px; word-break: break-all;
+  input[type=range] { width:100%; -webkit-appearance:none; appearance:none; height:1px; background:var(--line); outline:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--green); cursor:pointer; }
+
+  .sw { display:flex; gap:18px; }
+  .sw div { width:14px; height:14px; border-radius:50%; cursor:pointer; opacity:.55; transition:all .15s; }
+  .sw div.active { opacity:1; box-shadow:0 0 10px -1px currentColor; transform:scale(1.15); }
+
+  #log { font-size:8px; letter-spacing:1.5px; color:var(--dim); margin-top:8px; word-break:break-all; }
+  #log b { color:var(--green); font-weight:400; }
+
+  .hidden { opacity:.18; pointer-events:none; transition:opacity .5s; }
+  #controls { transition:opacity .5s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #connectBtn, #dot.on, h1 span, #modes button.active::before { animation:none !important; }
   }
-  #log b { color: var(--green); font-weight: 400; }
-
-  .hidden { opacity: .25; pointer-events: none; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>BADGE<span>_</span>CTRL</h1>
-  <div id="status"><div id="dot"></div><span id="statusText">OFFLINE</span></div>
+  <h1>aahans<span>_</span></h1>
+  <div id="status"><div id="dot"></div><span id="statusText">standby</span></div>
 </header>
 
-<div class="section">
-  <button class="primary" id="connectBtn" onclick="toggleConnect()">CONNECT</button>
-</div>
+<canvas id="cv" width="640" height="320"></canvas>
+<div class="cap"><span>16 &times; 8</span><span id="previewLabel">idle</span></div>
+
+<button id="connectBtn" onclick="toggleConnect()">connect</button>
 
 <div id="controls" class="hidden">
 
-  <div class="section">
-    <div class="label">Scroll Text</div>
+  <div class="sec">
     <div class="row">
-      <input type="text" id="textInput" placeholder="type something..." maxlength="60">
-      <button onclick="sendText()">SEND</button>
+      <input type="text" id="textInput" placeholder="text to scroll" maxlength="60">
+      <button onclick="sendText()">send</button>
     </div>
   </div>
 
-  <div class="section">
-    <div class="label">Mode</div>
-    <div class="grid">
-      <button onclick="setMode(0,this)">NAME</button>
-      <button onclick="setMode(1,this)">EYES</button>
-      <button onclick="setMode(3,this)">RAIN</button>
-      <button onclick="setMode(4,this)">PLASMA</button>
-      <button onclick="setMode(5,this)">FIRE</button>
-      <button onclick="setMode(6,this)">SPARKLE</button>
-      <button onclick="setMode(7,this)" style="grid-column: span 2;">AUTO CYCLE</button>
-    </div>
+  <div class="sec">
+    <div class="lbl">mode</div>
+    <div id="modes"></div>
   </div>
 
-  <div class="section">
-    <div class="label">Brightness <span class="val" id="bVal">30</span></div>
+  <div class="sec">
+    <div class="lbl">brightness <span class="v" id="bVal">30</span></div>
     <input type="range" id="bSlider" min="5" max="150" value="30"
-           oninput="document.getElementById('bVal').textContent=this.value"
-           onchange="sendCmd('B:'+this.value)">
+      oninput="uiBrightness(this.value)" onchange="sendCmd('B:'+this.value)">
   </div>
 
-  <div class="section">
-    <div class="label">Color</div>
-    <div class="swatches">
-      <div class="swatch active" style="background:#39FF14" onclick="setColor('39FF14',this)"></div>
-      <div class="swatch" style="background:#00E5FF" onclick="setColor('00E5FF',this)"></div>
-      <div class="swatch" style="background:#FF0044" onclick="setColor('FF0044',this)"></div>
-      <div class="swatch" style="background:#FF9500" onclick="setColor('FF9500',this)"></div>
-      <div class="swatch" style="background:#B14CFF" onclick="setColor('B14CFF',this)"></div>
-      <div class="swatch" style="background:#FFFFFF" onclick="setColor('FFFFFF',this)"></div>
-    </div>
+  <div class="sec">
+    <div class="lbl">color</div>
+    <div class="sw" id="swatches"></div>
   </div>
 
 </div>
 
-<div id="log">> waiting for connection. requires chrome (android/desktop) over https.</div>
+<div id="log">&gt; standby. chrome (android/mac) &middot; bluefy (ipad).</div>
 
 <script>
-const NUS_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-const NUS_RX      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+/* ---------- ble ---------- */
+const NUS_SERVICE='6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_RX='6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+let device=null, rxChar=null;
+const log=(m,ok)=>{document.getElementById('log').innerHTML=ok?'&gt; <b>'+m+'</b>':'&gt; '+m;};
 
-let device = null, rxChar = null;
+function setUI(c){
+  const b=document.getElementById('connectBtn');
+  b.textContent=c?'disconnect':'connect';
+  b.classList.toggle('connected',c);
+  document.getElementById('dot').classList.toggle('on',c);
+  document.getElementById('statusText').textContent=c?'linked':'standby';
+  document.getElementById('controls').classList.toggle('hidden',!c);
+  if(!c) simSet('breathe','idle');
+}
+async function toggleConnect(){
+  if(device&&device.gatt.connected){device.gatt.disconnect();return;}
+  if(!navigator.bluetooth){log('web bluetooth unavailable here. use chrome (android/mac) or bluefy app (ipad/iphone).');return;}
+  try{
+    log('scanning...');
+    device=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'BADGE'}],optionalServices:[NUS_SERVICE]});
+    device.addEventListener('gattserverdisconnected',()=>{setUI(false);log('link lost.');});
+    log('connecting '+device.name+'...');
+    const sv=await(await device.gatt.connect()).getPrimaryService(NUS_SERVICE);
+    rxChar=await sv.getCharacteristic(NUS_RX);
+    setUI(true); simSet('scroll','name'); log('linked: '+device.name,true);
+  }catch(e){log('failed: '+e.message);}
+}
+async function sendCmd(cmd){
+  if(!rxChar){log('not linked.');return;}
+  try{
+    const d=new TextEncoder().encode(cmd);
+    for(let i=0;i<d.length;i+=20) await rxChar.writeValue(d.slice(i,i+20));
+    log('sent: '+cmd,true);
+  }catch(e){log('send failed: '+e.message);}
+}
+function sendText(){
+  const t=document.getElementById('textInput').value.trim();
+  if(!t)return;
+  sendCmd(t); simText=t.toUpperCase(); simSet('scroll','text');
+  document.querySelectorAll('#modes button').forEach(b=>b.classList.remove('active'));
+}
+function uiBrightness(v){
+  document.getElementById('bVal').textContent=v;
+  simGain=0.35+Math.min(v,100)/100*0.65;
+}
 
-const log = (m, ok) => {
-  document.getElementById('log').innerHTML = ok ? '> <b>' + m + '</b>' : '> ' + m;
+/* ---------- modes & colors ---------- */
+const MODES=[
+  ['name',0,'scroll'],['eyes',1,'eyes'],['rain',3,'rain'],['plasma',4,'plasma'],
+  ['fire',5,'fire'],['sparkle',6,'sparkle'],['shapes',8,'shapes'],['life',9,'life'],
+  ['bounce',10,'bounce'],['eq',11,'eq'],['radar',12,'radar'],['comet',13,'comet'],
+  ['stars',14,'stars'],['pulse',15,'pulse'],['cycle',7,'cycle']
+];
+const COLORS=['39FF14','00E5FF','FF0044','FFB000','B14CFF','FFFFFF'];
+
+document.getElementById('modes').innerHTML=MODES.map(([n,m,s],i)=>
+  `<button onclick="pickMode(${i},this)">${n}</button>`).join('');
+document.getElementById('swatches').innerHTML=COLORS.map((h,i)=>
+  `<div style="background:#${h};color:#${h}" ${i===0?'class="active"':''} onclick="pickColor('${h}',this)"></div>`).join('');
+
+function pickMode(i,el){
+  const [n,m,s]=MODES[i];
+  sendCmd('M:'+m);
+  document.querySelectorAll('#modes button').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if(m===0)simText='AAHANS';
+  simSet(s,n);
+}
+function pickColor(hex,el){
+  sendCmd('C:'+hex);
+  document.querySelectorAll('.sw div').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  simColor=[parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
+}
+document.getElementById('textInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendText();});
+
+/* ---------- led sim ---------- */
+const W=16,H=8;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+let buf=new Float32Array(W*H*3);
+let simMode='breathe',simText='AAHANS',simColor=[57,255,20],simGain=0.65;
+let sOff=0;
+
+const FDATA={
+ 'A':[0x7E,0x11,0x11,0x11,0x7E],'B':[0x7F,0x49,0x49,0x49,0x36],'C':[0x3E,0x41,0x41,0x41,0x22],
+ 'D':[0x7F,0x41,0x41,0x22,0x1C],'E':[0x7F,0x49,0x49,0x49,0x41],'F':[0x7F,0x09,0x09,0x09,0x01],
+ 'G':[0x3E,0x41,0x49,0x49,0x7A],'H':[0x7F,0x08,0x08,0x08,0x7F],'I':[0x00,0x41,0x7F,0x41,0x00],
+ 'J':[0x20,0x40,0x41,0x3F,0x01],'K':[0x7F,0x08,0x14,0x22,0x41],'L':[0x7F,0x40,0x40,0x40,0x40],
+ 'M':[0x7F,0x02,0x0C,0x02,0x7F],'N':[0x7F,0x04,0x08,0x10,0x7F],'O':[0x3E,0x41,0x41,0x41,0x3E],
+ 'P':[0x7F,0x09,0x09,0x09,0x06],'Q':[0x3E,0x41,0x51,0x21,0x5E],'R':[0x7F,0x09,0x19,0x29,0x46],
+ 'S':[0x46,0x49,0x49,0x49,0x31],'T':[0x01,0x01,0x7F,0x01,0x01],'U':[0x3F,0x40,0x40,0x40,0x3F],
+ 'V':[0x1F,0x20,0x40,0x20,0x1F],'W':[0x7F,0x20,0x18,0x20,0x7F],'X':[0x63,0x14,0x08,0x14,0x63],
+ 'Y':[0x07,0x08,0x70,0x08,0x07],'Z':[0x61,0x51,0x49,0x45,0x43],
+ '0':[0x3E,0x51,0x49,0x45,0x3E],'1':[0x00,0x42,0x7F,0x40,0x00],'2':[0x42,0x61,0x51,0x49,0x46],
+ '3':[0x21,0x41,0x45,0x4B,0x31],'4':[0x18,0x14,0x12,0x7F,0x10],'5':[0x27,0x45,0x45,0x45,0x39],
+ '6':[0x3C,0x4A,0x49,0x49,0x30],'7':[0x01,0x71,0x09,0x05,0x03],'8':[0x36,0x49,0x49,0x49,0x36],
+ '9':[0x06,0x49,0x49,0x29,0x1E],' ':[0,0,0,0,0],'!':[0x00,0x00,0x5F,0x00,0x00],
+ '?':[0x02,0x01,0x51,0x09,0x06],'.':[0x00,0x60,0x60,0x00,0x00],'-':[0x08,0x08,0x08,0x08,0x08],
+ ':':[0x00,0x36,0x36,0x00,0x00]
+};
+const glyph=c=>FDATA[c]||FDATA['?'];
+const fc=()=>[simColor[0]/255,simColor[1]/255,simColor[2]/255];
+function setP(x,y,r,g,b){x|=0;y|=0;if(x<0||x>=W||y<0||y>=H)return;const i=(y*W+x)*3;buf[i]=r;buf[i+1]=g;buf[i+2]=b;}
+function fade(f){for(let i=0;i<buf.length;i++)buf[i]*=f;}
+function clearBuf(){buf.fill(0);}
+
+/* per-mode state */
+let rain=[],heat=[],blink=0,nextBlink=2000,pupil=1,pupilT=1,nextLook=0;
+let cyc=0,cycAt=0,nextShape=0,life=null,lifeGen=0;
+let balls=[[2,1,.42,.27],[11,5,-.31,-.35]],eq=new Array(W).fill(0),rip=[],starsA=[];
+for(let x=0;x<W;x++){rain[x]=-Math.floor(Math.random()*14)-1;heat[x]=new Array(H).fill(0);}
+for(let i=0;i<14;i++)starsA.push([Math.random()*W|0,Math.random()*H|0,Math.random()*240|0,2+Math.random()*4]);
+
+function simSet(m,label){
+  simMode=m;sOff=0;clearBuf();cyc=0;cycAt=performance.now()+6000;life=null;
+  document.getElementById('previewLabel').textContent=label;
+}
+
+const S={};
+S.scroll=()=>{
+  clearBuf();
+  const tw=simText.length*6,xs=sOff-tw,[r,g,b]=fc();
+  for(let ci=0;ci<simText.length;ci++){
+    const cx=xs+ci*6;if(cx<=-6||cx>=W)continue;
+    const gl=glyph(simText[ci]);
+    for(let col=0;col<5;col++)for(let row=0;row<7;row++)
+      if(gl[col]&(1<<row))setP(cx+col,row,r,g,b);
+  }
+  sOff++;if(sOff>tw+W)sOff=0;
+};
+S.rain=()=>{
+  fade(.72);const[r,g,b]=fc();
+  for(let x=0;x<W;x++){
+    if(rain[x]<0){rain[x]++;if(rain[x]===0&&Math.random()>.25)rain[x]=-1;continue;}
+    setP(x,rain[x],1,1,1);
+    if(rain[x]>0)setP(x,rain[x]-1,r,g,b);
+    rain[x]++;if(rain[x]>=H+2)rain[x]=-Math.floor(Math.random()*14)-1;
+  }
+};
+S.plasma=t=>{
+  const s=v=>Math.sin(v)*.5+.5;
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++){
+    const v=(s(x*.55+t/380)+s(y-t/210)+s((x+y)*.35+t/760))/3;
+    const[r,g,b]=hsl((v*360+t/25)%360);setP(x,y,r,g,b);
+  }
+};
+function hsl(h){const f=n=>{const k=(n+h/30)%12;return .55-.45*Math.max(-1,Math.min(k-3,9-k,1));};return[f(0),f(8),f(4)];}
+S.fire=()=>{
+  for(let x=0;x<W;x++){
+    for(let y=0;y<H;y++)heat[x][y]=Math.max(0,heat[x][y]-Math.random()*.09);
+    for(let y=0;y<H-1;y++)heat[x][y]=(heat[x][y+1]*3+heat[x][Math.min(y+2,H-1)])/4;
+    if(Math.random()<.5)heat[x][H-1]=Math.min(1,heat[x][H-1]+.5+Math.random()*.5);
+    for(let y=0;y<H;y++){const v=heat[x][y];setP(x,y,Math.min(1,v*2.4),Math.max(0,v*1.4-.35),Math.max(0,v*2-1.4));}
+  }
+};
+S.sparkle=()=>{
+  fade(.82);const[r,g,b]=fc();
+  if(Math.random()<.75)setP(Math.random()*W,Math.random()*H,r,g,b);
+  if(Math.random()<.3)setP(Math.random()*W,Math.random()*H,1,1,1);
+};
+S.eyes=now=>{
+  clearBuf();const[r,g,b]=fc();
+  if(blink===0&&now>nextBlink)blink=1;
+  if(now>nextLook){pupilT=Math.random()*3|0;nextLook=now+900+Math.random()*2200;}
+  if(pupil<pupilT)pupil++;else if(pupil>pupilT)pupil--;
+  let open=6;
+  if(blink){open=blink<=6?6-blink:blink-6;blink++;if(blink>12){blink=0;nextBlink=now+1500+Math.random()*4000;}}
+  [2,9].forEach(ox=>{
+    const top=((6-open)>>1)+1,bot=7-((6-open+1)>>1);
+    for(let x=0;x<5;x++)for(let y=top;y<bot;y++)
+      if(x===0||x===4||y===top||y===bot-1)setP(ox+x,y,r,g,b);
+    if(open>=4){setP(ox+1+pupil,3,r,g,b);setP(ox+1+pupil,4,r,g,b);}
+  });
+};
+S.shapes=now=>{
+  fade(.9);
+  if(now>nextShape){
+    nextShape=now+300+Math.random()*600;
+    const[r,g,b]=hsl(Math.random()*360),cx=Math.random()*W|0,cy=Math.random()*H|0,k=Math.random()*3|0;
+    if(k===0){const w=3+(Math.random()*4|0),h=3+(Math.random()*2|0);
+      for(let x=0;x<w;x++){setP(cx+x,cy,r,g,b);setP(cx+x,cy+h-1,r,g,b);}
+      for(let y=0;y<h;y++){setP(cx,cy+y,r,g,b);setP(cx+w-1,cy+y,r,g,b);}}
+    else if(k===1){for(let d=-2;d<=2;d++){setP(cx+d,cy,r,g,b);setP(cx,cy+d,r,g,b);}}
+    else{for(let d=0;d<=2;d++){setP(cx+d,cy+2-d,r,g,b);setP(cx-d,cy+2-d,r,g,b);setP(cx+d,cy-2+d,r,g,b);setP(cx-d,cy-2+d,r,g,b);}}
+  }
+};
+S.life=()=>{
+  if(!life||lifeGen>120){life=[];for(let x=0;x<W;x++){life[x]=[];for(let y=0;y<H;y++)life[x][y]=Math.random()<.33?1:0;}lifeGen=0;}
+  const nx=[];let alive=0;
+  for(let x=0;x<W;x++){nx[x]=[];for(let y=0;y<H;y++){
+    let n=0;
+    for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+      if(!dx&&!dy)continue;n+=life[(x+dx+W)%W][(y+dy+H)%H];}
+    nx[x][y]=life[x][y]?(n===2||n===3?1:0):(n===3?1:0);alive+=nx[x][y];
+  }}
+  life=nx;lifeGen++;if(alive<3)lifeGen=999;
+  fade(.55);const[r,g,b]=fc();
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++)if(life[x][y])setP(x,y,r,g,b);
+};
+S.bounce=()=>{
+  fade(.78);const[r,g,b]=fc();
+  balls.forEach((p,i)=>{
+    p[0]+=p[2];p[1]+=p[3];
+    if(p[0]<=0||p[0]>=W-1){p[2]=-p[2];p[0]=Math.max(0,Math.min(W-1,p[0]));}
+    if(p[1]<=0||p[1]>=H-1){p[3]=-p[3];p[1]=Math.max(0,Math.min(H-1,p[1]));}
+    i?setP(p[0],p[1],r,g,b):setP(p[0],p[1],1,1,1);
+  });
+};
+S.eq=t=>{
+  clearBuf();const[r,g,b]=fc();
+  for(let x=0;x<W;x++){
+    const tgt=((Math.sin(x*1.3+t/300)+Math.sin(x*.7-t/430)+2)/4*9)|0;
+    if(eq[x]<tgt)eq[x]++;else if(eq[x]>tgt)eq[x]--;
+    for(let h=0;h<eq[x];h++){
+      if(h>=6)setP(x,H-1-h,1,.1,.05);
+      else if(h>=4)setP(x,H-1-h,1,.63,0);
+      else setP(x,H-1-h,r,g,b);
+    }
+  }
+};
+S.radar=()=>{
+  fade(.75);const[r,g,b]=fc();
+  if(Math.random()<.07&&rip.length<3)rip.push([Math.random()*W|0,Math.random()*H|0,0]);
+  rip=rip.filter(p=>{
+    const rO=p[2]*p[2],rI=(p[2]-1)*(p[2]-1);
+    for(let x=0;x<W;x++)for(let y=0;y<H;y++){
+      const d2=(x-p[0])**2+(y-p[1])**2;
+      if(d2<=rO&&d2>rI)setP(x,y,r,g,b);
+    }
+    return ++p[2]<=12;
+  });
+};
+S.comet=t=>{
+  fade(.8);
+  const pos=((Math.sin(t/650)*.5+.5)*(W-1))|0,[r,g,b]=hsl((t/12)%360);
+  for(let y=0;y<H;y++)setP(pos,y,r,g,b);
+};
+S.stars=()=>{
+  clearBuf();
+  starsA.forEach(s=>{
+    s[2]+=s[3];
+    if(s[2]>=240){s[2]=240;s[3]=-(2+Math.random()*4);}
+    if(s[2]<=0){s[0]=Math.random()*W|0;s[1]=Math.random()*H|0;s[2]=1;s[3]=2+Math.random()*5;}
+    const v=s[2]/255;setP(s[0],s[1],v,v,Math.min(1,v+.05));
+  });
+};
+S.pulse=t=>{
+  const v=(Math.sin(t/900)*.5+.5)*.6+.05,[r,g,b]=fc();
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++)setP(x,y,r*v,g*v,b*v);
+};
+S.breathe=t=>{
+  clearBuf();
+  const a=.4,px=((Math.sin(t/3000)*.5+.5)*(W-1))|0,[r,g,b]=fc();
+  setP(px,4,r*a,g*a,b*a);
+};
+const CYCLE=['rain','plasma','fire','sparkle','shapes','life','bounce','eq','radar','comet','stars','pulse','eyes'];
+S.cycle=t=>{
+  if(t>cycAt){cyc=(cyc+1)%CYCLE.length;cycAt=t+6000;clearBuf();}
+  S[CYCLE[cyc]](t);
 };
 
-function setUI(connected) {
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = connected ? 'DISCONNECT' : 'CONNECT';
-  btn.classList.toggle('connected', connected);
-  document.getElementById('dot').classList.toggle('on', connected);
-  document.getElementById('statusText').textContent = connected ? 'LINKED' : 'OFFLINE';
-  document.getElementById('controls').classList.toggle('hidden', !connected);
+/* ---------- render ---------- */
+let lastStep=0;
+const IV={plasma:33,scroll:80,rain:70,life:150,radar:70,comet:25,breathe:50};
+function frame(now){
+  let m=simMode;
+  const iv=IV[m==='cycle'?CYCLE[cyc]:m]||45;
+  if(now-lastStep>=iv){lastStep=now;S[m](now);}
+  draw(now);
+  requestAnimationFrame(frame);
 }
-
-async function toggleConnect() {
-  if (device && device.gatt.connected) { device.gatt.disconnect(); return; }
-  if (!navigator.bluetooth) {
-    log('web bluetooth not supported here. open in chrome over https.');
-    return;
-  }
-  try {
-    log('scanning...');
-    device = await navigator.bluetooth.requestDevice({
-      filters: [{ namePrefix: 'BADGE' }],
-      optionalServices: [NUS_SERVICE]
-    });
-    device.addEventListener('gattserverdisconnected', () => { setUI(false); log('disconnected.'); });
-    log('connecting to ' + device.name + '...');
-    const server  = await device.gatt.connect();
-    const service = await server.getPrimaryService(NUS_SERVICE);
-    rxChar = await service.getCharacteristic(NUS_RX);
-    setUI(true);
-    log('linked to ' + device.name, true);
-  } catch (e) {
-    log('failed: ' + e.message);
-  }
-}
-
-async function sendCmd(cmd) {
-  if (!rxChar) { log('not connected.'); return; }
-  try {
-    const data = new TextEncoder().encode(cmd);
-    // chunk to 20 bytes for BLE MTU safety
-    for (let i = 0; i < data.length; i += 20) {
-      await rxChar.writeValue(data.slice(i, i + 20));
+function draw(now){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const cw=cv.width/W,ch=cv.height/H,rad=Math.min(cw,ch)*.32;
+  const breath=simMode==='breathe'?.7+.3*Math.sin(now/1400):1;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const i=(y*W+x)*3;
+    const R=buf[i]*simGain*breath,G=buf[i+1]*simGain*breath,B=buf[i+2]*simGain*breath;
+    const px=x*cw+cw/2,py=y*ch+ch/2;
+    ctx.fillStyle='rgba(58,64,56,0.2)';
+    ctx.beginPath();ctx.arc(px,py,rad*.42,0,7);ctx.fill();
+    if(R+G+B>.02){
+      const col=`rgb(${R*255|0},${G*255|0},${B*255|0})`;
+      ctx.shadowColor=col;ctx.shadowBlur=rad*.9;
+      ctx.fillStyle=col;
+      ctx.beginPath();ctx.arc(px,py,rad,0,7);ctx.fill();
+      ctx.shadowBlur=0;
     }
-    log('sent: ' + cmd, true);
-  } catch (e) {
-    log('send failed: ' + e.message);
   }
 }
-
-function sendText() {
-  const t = document.getElementById('textInput').value.trim();
-  if (t) sendCmd(t);
-}
-document.getElementById('textInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') sendText();
-});
-
-function setMode(m, el) {
-  sendCmd('M:' + m);
-  document.querySelectorAll('.grid button').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function setColor(hex, el) {
-  sendCmd('C:' + hex);
-  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-}
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
