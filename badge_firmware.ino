@@ -1,5 +1,8 @@
 /*
  * EyeD BADGE FIRMWARE v1 — ESP32-C6 + 8x16 WS2812B matrix
+ * Worn in portrait: logical canvas is 8 wide x 16 tall, text scrolls
+ * bottom-to-top like credits. XY() maps portrait coords onto the
+ * landscape-wired panel.
  * ------------------------------------------------------
  * Modes:
  *   0 = Name scroll (default, auto-alternates with eyes)
@@ -29,9 +32,11 @@
 
 // ---------------- CONFIG ----------------
 #define DATA_PIN      0
-#define WIDTH         16
-#define HEIGHT        8
-#define NUM_LEDS      (WIDTH * HEIGHT)
+#define WIDTH         8         // logical width as worn (portrait)
+#define HEIGHT        16        // logical height as worn
+#define PANEL_W       16        // physical matrix wiring
+#define PANEL_H       8
+#define NUM_LEDS      (PANEL_W * PANEL_H)
 #define SERPENTINE    false     // false if your PCB is progressive-wired
 #define ROTATE_180    true      // flip display 180° (panel mounted upside-down)
 #define NAME_TEXT     "Aahans"
@@ -57,9 +62,11 @@ uint16_t XY(int8_t x, int8_t y) {
   x = WIDTH - 1 - x;
   y = HEIGHT - 1 - y;
 #endif
-  if (SERPENTINE && (y & 1))
-    return y * WIDTH + (WIDTH - 1 - x);
-  return y * WIDTH + x;
+  int8_t px = HEIGHT - 1 - y;   // rotate portrait 90° onto landscape panel
+  int8_t py = x;
+  if (SERPENTINE && (py & 1))
+    return py * PANEL_W + (PANEL_W - 1 - px);
+  return py * PANEL_W + px;
 }
 
 void setPx(int8_t x, int8_t y, CRGB c) {
@@ -137,26 +144,28 @@ uint8_t fontCol(char c, uint8_t col) {
 }
 
 // ---------------- SCROLLER ----------------
+// vertical, credits-style: text enters at the bottom and scrolls up,
+// one upright letter per 8 rows, centered in the 8-px width
 int scrollOffset;
-int textPixelWidth(const String &s) { return s.length() * 6; } // 5px + 1 gap
+int textPixelHeight(const String &s) { return s.length() * 8; } // 7px + 1 gap
 
 // returns true when one full pass is complete
 bool drawScrollFrame(const String &s) {
   FastLED.clear();
-  int xStart = scrollOffset - textPixelWidth(s);   // enters left, moves right
+  int yStart = HEIGHT - scrollOffset;              // enters bottom, moves up
   for (uint16_t ci = 0; ci < s.length(); ci++) {
-    int cx = xStart + ci * 6;
-    if (cx <= -6 || cx >= WIDTH) continue;
+    int cy = yStart + ci * 8;
+    if (cy <= -8 || cy >= HEIGHT) continue;
     for (uint8_t col = 0; col < 5; col++) {
       uint8_t bits = fontCol(s[ci], col);
       for (uint8_t row = 0; row < 7; row++) {
-        if (bits & (1 << row)) setPx(cx + col, row, fgColor); // rows 0..6, row 7 blank
+        if (bits & (1 << row)) setPx(1 + col, cy + row, fgColor);
       }
     }
   }
   FastLED.show();
   scrollOffset++;
-  if (scrollOffset > textPixelWidth(s) + WIDTH) { scrollOffset = 0; return true; }
+  if (scrollOffset > textPixelHeight(s) + HEIGHT) { scrollOffset = 0; return true; }
   return false;
 }
 
@@ -171,7 +180,7 @@ void drawEyesFrame() {
 
   if (blinkPhase == 0 && now > nextBlinkAt) blinkPhase = 1;
   if (now > nextLookAt) {
-    pupilTargetX = (int8_t)random8(5) - 2;   // -2..2
+    pupilTargetX = (int8_t)random8(3) - 1;   // -1..1
     nextLookAt = now + 900 + random16(2200);
   }
   if (pupilX < pupilTargetX) pupilX++;
@@ -186,26 +195,26 @@ void drawEyesFrame() {
   }
 
   FastLED.clear();
-  const float cx = 7.5f, cy = 3.5f, a = 7.0f;
-  float b = 0.6f + 3.4f * openness / 6.0f;   // lid height follows blink
+  const float cx = 3.5f, cy = 7.5f, a = 4.0f;      // centered in portrait
+  float b = 0.6f + 3.2f * openness / 6.0f;   // lid height follows blink
   for (int8_t x = 0; x < WIDTH; x++)
     for (int8_t y = 0; y < HEIGHT; y++) {
       float dx = (x - cx) / a, dy = (y - cy) / b;
       float d = dx * dx + dy * dy;
-      if (d <= 1.0f && d >= 0.55f) setPx(x, y, fgColor);  // almond outline
+      if (d <= 1.0f && d >= 0.45f) setPx(x, y, fgColor);  // almond outline
     }
 
   if (openness >= 3) {                       // iris + pupil visible
-    int8_t ix = 7 + pupilX;
+    int8_t ix = 3 + pupilX;
     CRGB iris = fgColor;
     iris.nscale8_video(80);
     for (int8_t x = ix - 1; x <= ix + 2; x++)
-      for (int8_t y = 2; y <= 5; y++) {
-        if ((x == ix - 1 || x == ix + 2) && (y == 2 || y == 5)) continue; // round the iris
+      for (int8_t y = 6; y <= 9; y++) {
+        if ((x == ix - 1 || x == ix + 2) && (y == 6 || y == 9)) continue; // round the iris
         setPx(x, y, iris);
       }
-    setPx(ix, 3, CRGB::Red);  setPx(ix + 1, 3, CRGB::Red);  // pupil
-    setPx(ix, 4, CRGB::Red);  setPx(ix + 1, 4, CRGB::Red);
+    setPx(ix, 7, CRGB::Red);  setPx(ix + 1, 7, CRGB::Red);  // pupil
+    setPx(ix, 8, CRGB::Red);  setPx(ix + 1, 8, CRGB::Red);
   }
   FastLED.show();
 }
@@ -336,7 +345,7 @@ void drawLifeFrame() {
 }
 
 // 10: Bounce — two balls with trails
-float ballX[2] = {2, 11}, ballY[2] = {1, 5};
+float ballX[2] = {2, 5}, ballY[2] = {3, 12};
 float ballVX[2] = {0.42, -0.31}, ballVY[2] = {0.27, -0.35};
 
 void drawBounceFrame() {
@@ -356,12 +365,12 @@ uint8_t eqLevel[WIDTH];
 void drawEqFrame() {
   FastLED.clear();
   for (uint8_t x = 0; x < WIDTH; x++) {
-    uint8_t target = inoise8(x * 35, millis() / 3) / 28;   // 0..9
+    uint8_t target = inoise8(x * 35, millis() / 3) / 18;   // 0..14
     if (target > HEIGHT) target = HEIGHT;
     if (eqLevel[x] < target) eqLevel[x]++;
     else if (eqLevel[x] > target) eqLevel[x]--;
     for (uint8_t h = 0; h < eqLevel[x]; h++) {
-      CRGB c = (h >= 6) ? CRGB(CRGB::Red) : (h >= 4) ? CRGB(255, 160, 0) : fgColor;
+      CRGB c = (h >= 12) ? CRGB(CRGB::Red) : (h >= 8) ? CRGB(255, 160, 0) : fgColor;
       setPx(x, HEIGHT - 1 - h, c);
     }
   }

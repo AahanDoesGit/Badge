@@ -21,7 +21,7 @@
   #dot.on { background:var(--green); animation:br 2.8s ease-in-out infinite; }
   @keyframes br { 0%,100%{box-shadow:0 0 2px 0 rgba(57,255,20,.4)} 50%{box-shadow:0 0 9px 2px rgba(57,255,20,.8)} }
 
-  canvas { display:block; width:100%; margin-bottom:6px; }
+  canvas { display:block; width:50%; margin:0 auto 6px; }
   .cap { font-size:8px; letter-spacing:2px; color:var(--dim); display:flex; justify-content:space-between; margin-bottom:34px; }
 
   #connectBtn {
@@ -87,8 +87,8 @@
   <div id="status"><div id="dot"></div><span id="statusText">standby</span></div>
 </header>
 
-<canvas id="cv" width="640" height="320"></canvas>
-<div class="cap"><span>16 &times; 8</span><span id="previewLabel">idle</span></div>
+<canvas id="cv" width="320" height="640"></canvas>
+<div class="cap"><span>8 &times; 16</span><span id="previewLabel">idle</span></div>
 
 <button id="connectBtn" onclick="toggleConnect()">connect</button>
 
@@ -200,7 +200,7 @@ function pickColor(hex,el){
 document.getElementById('textInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendText();});
 
 /* ---------- led sim ---------- */
-const W=16,H=8;
+const W=8,H=16;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 let buf=new Float32Array(W*H*3);
 let simMode='breathe',simText='AAHANS',simColor=[57,255,20],simGain=0.65;
@@ -232,7 +232,7 @@ function clearBuf(){buf.fill(0);}
 /* per-mode state */
 let rain=[],heat=[],blink=0,nextBlink=2000,pupil=0,pupilT=0,nextLook=0;
 let cyc=0,cycAt=0,nextShape=0,life=null,lifeGen=0;
-let balls=[[2,1,.42,.27],[11,5,-.31,-.35]],eq=new Array(W).fill(0),rip=[],starsA=[];
+let balls=[[2,3,.42,.27],[5,12,-.31,-.35]],eq=new Array(W).fill(0),rip=[],starsA=[];
 for(let x=0;x<W;x++){rain[x]=-Math.floor(Math.random()*14)-1;heat[x]=new Array(H).fill(0);}
 for(let i=0;i<14;i++)starsA.push([Math.random()*W|0,Math.random()*H|0,Math.random()*240|0,2+Math.random()*4]);
 
@@ -244,14 +244,14 @@ function simSet(m,label){
 const S={};
 S.scroll=()=>{
   clearBuf();
-  const tw=simText.length*6,xs=sOff-tw,[r,g,b]=fc();
+  const th=simText.length*8,ys=H-sOff,[r,g,b]=fc();
   for(let ci=0;ci<simText.length;ci++){
-    const cx=xs+ci*6;if(cx<=-6||cx>=W)continue;
+    const cy=ys+ci*8;if(cy<=-8||cy>=H)continue;
     const gl=glyph(simText[ci]);
     for(let col=0;col<5;col++)for(let row=0;row<7;row++)
-      if(gl[col]&(1<<row))setP(cx+col,row,r,g,b);
+      if(gl[col]&(1<<row))setP(1+col,cy+row,r,g,b);
   }
-  sOff++;if(sOff>tw+W)sOff=0;
+  sOff++;if(sOff>th+H)sOff=0;
 };
 S.rain=()=>{
   fade(.72);const[r,g,b]=fc();
@@ -286,23 +286,23 @@ S.sparkle=()=>{
 S.eyes=now=>{
   clearBuf();const[r,g,b]=fc();
   if(blink===0&&now>nextBlink)blink=1;
-  if(now>nextLook){pupilT=(Math.random()*5|0)-2;nextLook=now+900+Math.random()*2200;}
+  if(now>nextLook){pupilT=(Math.random()*3|0)-1;nextLook=now+900+Math.random()*2200;}
   if(pupil<pupilT)pupil++;else if(pupil>pupilT)pupil--;
   let open=6;
   if(blink){open=blink<=6?6-blink:blink-6;blink++;if(blink>12){blink=0;nextBlink=now+1500+Math.random()*4000;}}
-  const cx=7.5,cy=3.5,a=7,bb=.6+3.4*open/6;
+  const cx=3.5,cy=7.5,a=4,bb=.6+3.2*open/6;
   for(let x=0;x<W;x++)for(let y=0;y<H;y++){
     const dx=(x-cx)/a,dy=(y-cy)/bb,d=dx*dx+dy*dy;
-    if(d<=1&&d>=.55)setP(x,y,r,g,b);
+    if(d<=1&&d>=.45)setP(x,y,r,g,b);
   }
   if(open>=3){
-    const ix=7+pupil;
-    for(let x=ix-1;x<=ix+2;x++)for(let y=2;y<=5;y++){
-      if((x===ix-1||x===ix+2)&&(y===2||y===5))continue;
+    const ix=3+pupil;
+    for(let x=ix-1;x<=ix+2;x++)for(let y=6;y<=9;y++){
+      if((x===ix-1||x===ix+2)&&(y===6||y===9))continue;
       setP(x,y,r*.32,g*.32,b*.32);
     }
-    setP(ix,3,1,.06,.03);setP(ix+1,3,1,.06,.03);
-    setP(ix,4,1,.06,.03);setP(ix+1,4,1,.06,.03);
+    setP(ix,7,1,.06,.03);setP(ix+1,7,1,.06,.03);
+    setP(ix,8,1,.06,.03);setP(ix+1,8,1,.06,.03);
   }
 };
 S.shapes=now=>{
@@ -342,11 +342,11 @@ S.bounce=()=>{
 S.eq=t=>{
   clearBuf();const[r,g,b]=fc();
   for(let x=0;x<W;x++){
-    const tgt=((Math.sin(x*1.3+t/300)+Math.sin(x*.7-t/430)+2)/4*9)|0;
+    const tgt=((Math.sin(x*1.3+t/300)+Math.sin(x*.7-t/430)+2)/4*15)|0;
     if(eq[x]<tgt)eq[x]++;else if(eq[x]>tgt)eq[x]--;
     for(let h=0;h<eq[x];h++){
-      if(h>=6)setP(x,H-1-h,1,.1,.05);
-      else if(h>=4)setP(x,H-1-h,1,.63,0);
+      if(h>=12)setP(x,H-1-h,1,.1,.05);
+      else if(h>=8)setP(x,H-1-h,1,.63,0);
       else setP(x,H-1-h,r,g,b);
     }
   }
