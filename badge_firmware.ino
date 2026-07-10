@@ -1,5 +1,5 @@
 /*
- * ID BADGE FIRMWARE v1 — ESP32-C6 + 8x16 WS2812B matrix
+ * EyeD BADGE FIRMWARE v1 — ESP32-C6 + 8x16 WS2812B matrix
  * ------------------------------------------------------
  * Modes:
  *   0 = Name scroll (default, auto-alternates with eyes)
@@ -28,12 +28,13 @@
 #include <BLE2902.h>
 
 // ---------------- CONFIG ----------------
-#define DATA_PIN      4
+#define DATA_PIN      0
 #define WIDTH         16
 #define HEIGHT        8
 #define NUM_LEDS      (WIDTH * HEIGHT)
-#define SERPENTINE    true      // false if your PCB is progressive-wired
-#define NAME_TEXT     "AYUSHMAAN"
+#define SERPENTINE    false     // false if your PCB is progressive-wired
+#define ROTATE_180    true      // flip display 180° (panel mounted upside-down)
+#define NAME_TEXT     "Aahans"
 #define SCROLL_MS     70        // lower = faster scroll
 #define EYES_DWELL_MS 8000      // eyes duration between name scrolls
 
@@ -44,7 +45,7 @@ uint8_t brightness = 30;
 // ---------------- STATE ----------------
 enum Mode { MODE_NAME, MODE_EYES, MODE_TEXT, MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_CYCLE,
             MODE_SHAPES, MODE_LIFE, MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE };
-volatile Mode mode = MODE_NAME;
+volatile Mode mode = MODE_EYES;   // boot into idle eyes (no text until sent)
 String bleText = "";
 volatile bool newBleMsg = false;
 String bleBuf = "";
@@ -52,6 +53,10 @@ String bleBuf = "";
 // ---------------- XY MAPPING ----------------
 uint16_t XY(int8_t x, int8_t y) {
   if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return NUM_LEDS; // off-grid guard
+#if ROTATE_180
+  x = WIDTH - 1 - x;
+  y = HEIGHT - 1 - y;
+#endif
   if (SERPENTINE && (y & 1))
     return y * WIDTH + (WIDTH - 1 - x);
   return y * WIDTH + x;
@@ -442,7 +447,7 @@ class SrvCallback : public BLEServerCallbacks {
 };
 
 void setupBLE() {
-  BLEDevice::init("BADGE-AAHANS");
+  BLEDevice::init("EyeD Badge");
   BLEServer *server = BLEDevice::createServer();
   server->setCallbacks(new SrvCallback());
   BLEService *svc = server->createService(NUS_SERVICE);

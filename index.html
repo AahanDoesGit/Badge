@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>aahans</title>
+<title>EyeD Badge</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -83,7 +83,7 @@
 <body>
 
 <header>
-  <h1>aahans<span>_</span></h1>
+  <h1>eyed badge<span>_</span></h1>
   <div id="status"><div id="dot"></div><span id="statusText">standby</span></div>
 </header>
 
@@ -142,7 +142,7 @@ async function toggleConnect(){
   if(!navigator.bluetooth){log('web bluetooth unavailable here. use chrome (android/mac) or bluefy app (ipad/iphone).');return;}
   try{
     log('scanning...');
-    device=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'BADGE'}],optionalServices:[NUS_SERVICE]});
+    device=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'EyeD'}],optionalServices:[NUS_SERVICE]});
     device.addEventListener('gattserverdisconnected',()=>{setUI(false);log('link lost.');});
     log('connecting '+device.name+'...');
     const sv=await(await device.gatt.connect()).getPrimaryService(NUS_SERVICE);
