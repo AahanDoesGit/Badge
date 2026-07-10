@@ -244,7 +244,7 @@ function simSet(m,label){
 const S={};
 S.scroll=()=>{
   clearBuf();
-  const th=simText.length*8,ys=H-sOff,[r,g,b]=fc();
+  const th=simText.length*8,ys=sOff-th,[r,g,b]=fc();
   for(let ci=0;ci<simText.length;ci++){
     const cy=ys+ci*8;if(cy<=-8||cy>=H)continue;
     const gl=glyph(simText[ci]);

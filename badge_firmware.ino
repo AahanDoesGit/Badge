@@ -144,7 +144,7 @@ uint8_t fontCol(char c, uint8_t col) {
 }
 
 // ---------------- SCROLLER ----------------
-// vertical, credits-style: text enters at the bottom and scrolls up,
+// vertical: text enters at the top and scrolls down,
 // one upright letter per 8 rows, centered in the 8-px width
 int scrollOffset;
 int textPixelHeight(const String &s) { return s.length() * 8; } // 7px + 1 gap
@@ -152,7 +152,7 @@ int textPixelHeight(const String &s) { return s.length() * 8; } // 7px + 1 gap
 // returns true when one full pass is complete
 bool drawScrollFrame(const String &s) {
   FastLED.clear();
-  int yStart = HEIGHT - scrollOffset;              // enters bottom, moves up
+  int yStart = scrollOffset - textPixelHeight(s);  // enters top, moves down
   for (uint16_t ci = 0; ci < s.length(); ci++) {
     int cy = yStart + ci * 8;
     if (cy <= -8 || cy >= HEIGHT) continue;
