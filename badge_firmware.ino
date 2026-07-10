@@ -160,33 +160,18 @@ bool drawScrollFrame(const String &s) {
   return false;
 }
 
-// ---------------- EYES ----------------
-// two 5x6 eyes at x=2 and x=9, pupil wanders, random blinks
-int8_t pupilX = 1, pupilTargetX = 1;
+// ---------------- EYE ----------------
+// single "Big Brother" eye — almond outline, wandering red pupil, random blinks
+int8_t pupilX = 0, pupilTargetX = 0;
 uint8_t blinkPhase = 0;          // 0 = open, >0 counting through a blink
 uint32_t nextBlinkAt = 0, nextLookAt = 0;
-
-void drawEye(int8_t ox, uint8_t openness) {
-  // openness: 6 = fully open ... 0 = closed
-  uint8_t top = (6 - openness) / 2 + 1;
-  uint8_t bot = 7 - (6 - openness + 1) / 2;
-  for (int8_t x = 0; x < 5; x++)
-    for (int8_t y = top; y < bot; y++) {
-      bool border = (x == 0 || x == 4 || y == top || y == bot - 1);
-      if (border) setPx(ox + x, y, fgColor);
-    }
-  if (openness >= 4) { // pupil visible
-    setPx(ox + 1 + pupilX, 3, fgColor);
-    setPx(ox + 1 + pupilX, 4, fgColor);
-  }
-}
 
 void drawEyesFrame() {
   uint32_t now = millis();
 
   if (blinkPhase == 0 && now > nextBlinkAt) blinkPhase = 1;
   if (now > nextLookAt) {
-    pupilTargetX = random8(3);   // 0,1,2
+    pupilTargetX = (int8_t)random8(5) - 2;   // -2..2
     nextLookAt = now + 900 + random16(2200);
   }
   if (pupilX < pupilTargetX) pupilX++;
@@ -201,8 +186,27 @@ void drawEyesFrame() {
   }
 
   FastLED.clear();
-  drawEye(2, openness);
-  drawEye(9, openness);
+  const float cx = 7.5f, cy = 3.5f, a = 7.0f;
+  float b = 0.6f + 3.4f * openness / 6.0f;   // lid height follows blink
+  for (int8_t x = 0; x < WIDTH; x++)
+    for (int8_t y = 0; y < HEIGHT; y++) {
+      float dx = (x - cx) / a, dy = (y - cy) / b;
+      float d = dx * dx + dy * dy;
+      if (d <= 1.0f && d >= 0.55f) setPx(x, y, fgColor);  // almond outline
+    }
+
+  if (openness >= 3) {                       // iris + pupil visible
+    int8_t ix = 7 + pupilX;
+    CRGB iris = fgColor;
+    iris.nscale8_video(80);
+    for (int8_t x = ix - 1; x <= ix + 2; x++)
+      for (int8_t y = 2; y <= 5; y++) {
+        if ((x == ix - 1 || x == ix + 2) && (y == 2 || y == 5)) continue; // round the iris
+        setPx(x, y, iris);
+      }
+    setPx(ix, 3, CRGB::Red);  setPx(ix + 1, 3, CRGB::Red);  // pupil
+    setPx(ix, 4, CRGB::Red);  setPx(ix + 1, 4, CRGB::Red);
+  }
   FastLED.show();
 }
 

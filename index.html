@@ -230,7 +230,7 @@ function fade(f){for(let i=0;i<buf.length;i++)buf[i]*=f;}
 function clearBuf(){buf.fill(0);}
 
 /* per-mode state */
-let rain=[],heat=[],blink=0,nextBlink=2000,pupil=1,pupilT=1,nextLook=0;
+let rain=[],heat=[],blink=0,nextBlink=2000,pupil=0,pupilT=0,nextLook=0;
 let cyc=0,cycAt=0,nextShape=0,life=null,lifeGen=0;
 let balls=[[2,1,.42,.27],[11,5,-.31,-.35]],eq=new Array(W).fill(0),rip=[],starsA=[];
 for(let x=0;x<W;x++){rain[x]=-Math.floor(Math.random()*14)-1;heat[x]=new Array(H).fill(0);}
@@ -286,16 +286,24 @@ S.sparkle=()=>{
 S.eyes=now=>{
   clearBuf();const[r,g,b]=fc();
   if(blink===0&&now>nextBlink)blink=1;
-  if(now>nextLook){pupilT=Math.random()*3|0;nextLook=now+900+Math.random()*2200;}
+  if(now>nextLook){pupilT=(Math.random()*5|0)-2;nextLook=now+900+Math.random()*2200;}
   if(pupil<pupilT)pupil++;else if(pupil>pupilT)pupil--;
   let open=6;
   if(blink){open=blink<=6?6-blink:blink-6;blink++;if(blink>12){blink=0;nextBlink=now+1500+Math.random()*4000;}}
-  [2,9].forEach(ox=>{
-    const top=((6-open)>>1)+1,bot=7-((6-open+1)>>1);
-    for(let x=0;x<5;x++)for(let y=top;y<bot;y++)
-      if(x===0||x===4||y===top||y===bot-1)setP(ox+x,y,r,g,b);
-    if(open>=4){setP(ox+1+pupil,3,r,g,b);setP(ox+1+pupil,4,r,g,b);}
-  });
+  const cx=7.5,cy=3.5,a=7,bb=.6+3.4*open/6;
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++){
+    const dx=(x-cx)/a,dy=(y-cy)/bb,d=dx*dx+dy*dy;
+    if(d<=1&&d>=.55)setP(x,y,r,g,b);
+  }
+  if(open>=3){
+    const ix=7+pupil;
+    for(let x=ix-1;x<=ix+2;x++)for(let y=2;y<=5;y++){
+      if((x===ix-1||x===ix+2)&&(y===2||y===5))continue;
+      setP(x,y,r*.32,g*.32,b*.32);
+    }
+    setP(ix,3,1,.06,.03);setP(ix+1,3,1,.06,.03);
+    setP(ix,4,1,.06,.03);setP(ix+1,4,1,.06,.03);
+  }
 };
 S.shapes=now=>{
   fade(.9);
