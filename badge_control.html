@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BADGE // CONTROL</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --line: #222222;
+    --green: #39FF14;
+    --dim: #666666;
+    --text: #e0e0e0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Space Mono', monospace; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
+    background-size: 14px 14px;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--line); margin-bottom: 20px;
+  }
+  h1 { font-size: 15px; letter-spacing: 3px; font-weight: 700; }
+  h1 span { color: var(--green); }
+  #status {
+    font-size: 10px; letter-spacing: 2px; color: var(--dim);
+    display: flex; align-items: center; gap: 6px;
+  }
+  #dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #333; transition: all .3s;
+  }
+  #dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  .section { margin-bottom: 22px; }
+  .label {
+    font-size: 9px; letter-spacing: 3px; color: var(--dim);
+    margin-bottom: 8px; text-transform: uppercase;
+  }
+
+  button {
+    background: var(--panel); border: 1px solid var(--line);
+    color: var(--text); font-size: 11px; letter-spacing: 1px;
+    padding: 12px; cursor: pointer; transition: all .15s;
+    text-transform: uppercase;
+  }
+  button:active { transform: scale(.97); }
+  button:hover { border-color: var(--green); }
+  button.primary {
+    width: 100%; border-color: var(--green); color: var(--green);
+    font-weight: 700; letter-spacing: 3px; padding: 15px;
+  }
+  button.primary.connected { background: var(--green); color: #000; }
+
+  .row { display: flex; gap: 8px; }
+  input[type=text] {
+    flex: 1; background: var(--panel); border: 1px solid var(--line);
+    color: var(--green); font-size: 13px; padding: 12px;
+    letter-spacing: 1px; outline: none; text-transform: uppercase;
+  }
+  input[type=text]:focus { border-color: var(--green); }
+  input[type=text]::placeholder { color: #444; text-transform: none; }
+
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid button { font-size: 9px; padding: 12px 4px; }
+  .grid button.active { border-color: var(--green); color: var(--green); }
+
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; height: 2px;
+    background: var(--line); outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    background: var(--green); cursor: pointer; border-radius: 0;
+  }
+  .val { font-size: 10px; color: var(--green); float: right; }
+
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .swatch {
+    aspect-ratio: 1; border: 1px solid var(--line); cursor: pointer;
+    transition: all .15s;
+  }
+  .swatch:hover, .swatch.active { border-color: #fff; transform: scale(1.08); }
+
+  #log {
+    font-size: 9px; color: var(--dim); letter-spacing: 1px;
+    border-top: 1px solid var(--line); padding-top: 10px;
+    min-height: 16px; word-break: break-all;
+  }
+  #log b { color: var(--green); font-weight: 400; }
+
+  .hidden { opacity: .25; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BADGE<span>_</span>CTRL</h1>
+  <div id="status"><div id="dot"></div><span id="statusText">OFFLINE</span></div>
+</header>
+
+<div class="section">
+  <button class="primary" id="connectBtn" onclick="toggleConnect()">CONNECT</button>
+</div>
+
+<div id="controls" class="hidden">
+
+  <div class="section">
+    <div class="label">Scroll Text</div>
+    <div class="row">
+      <input type="text" id="textInput" placeholder="type something..." maxlength="60">
+      <button onclick="sendText()">SEND</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Mode</div>
+    <div class="grid">
+      <button onclick="setMode(0,this)">NAME</button>
+      <button onclick="setMode(1,this)">EYES</button>
+      <button onclick="setMode(3,this)">RAIN</button>
+      <button onclick="setMode(4,this)">PLASMA</button>
+      <button onclick="setMode(5,this)">FIRE</button>
+      <button onclick="setMode(6,this)">SPARKLE</button>
+      <button onclick="setMode(7,this)" style="grid-column: span 2;">AUTO CYCLE</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Brightness <span class="val" id="bVal">30</span></div>
+    <input type="range" id="bSlider" min="5" max="150" value="30"
+           oninput="document.getElementById('bVal').textContent=this.value"
+           onchange="sendCmd('B:'+this.value)">
+  </div>
+
+  <div class="section">
+    <div class="label">Color</div>
+    <div class="swatches">
+      <div class="swatch active" style="background:#39FF14" onclick="setColor('39FF14',this)"></div>
+      <div class="swatch" style="background:#00E5FF" onclick="setColor('00E5FF',this)"></div>
+      <div class="swatch" style="background:#FF0044" onclick="setColor('FF0044',this)"></div>
+      <div class="swatch" style="background:#FF9500" onclick="setColor('FF9500',this)"></div>
+      <div class="swatch" style="background:#B14CFF" onclick="setColor('B14CFF',this)"></div>
+      <div class="swatch" style="background:#FFFFFF" onclick="setColor('FFFFFF',this)"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="log">> waiting for connection. requires chrome (android/desktop) over https.</div>
+
+<script>
+const NUS_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_RX      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+
+let device = null, rxChar = null;
+
+const log = (m, ok) => {
+  document.getElementById('log').innerHTML = ok ? '> <b>' + m + '</b>' : '> ' + m;
+};
+
+function setUI(connected) {
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = connected ? 'DISCONNECT' : 'CONNECT';
+  btn.classList.toggle('connected', connected);
+  document.getElementById('dot').classList.toggle('on', connected);
+  document.getElementById('statusText').textContent = connected ? 'LINKED' : 'OFFLINE';
+  document.getElementById('controls').classList.toggle('hidden', !connected);
+}
+
+async function toggleConnect() {
+  if (device && device.gatt.connected) { device.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) {
+    log('web bluetooth not supported here. open in chrome over https.');
+    return;
+  }
+  try {
+    log('scanning...');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'BADGE' }],
+      optionalServices: [NUS_SERVICE]
+    });
+    device.addEventListener('gattserverdisconnected', () => { setUI(false); log('disconnected.'); });
+    log('connecting to ' + device.name + '...');
+    const server  = await device.gatt.connect();
+    const service = await server.getPrimaryService(NUS_SERVICE);
+    rxChar = await service.getCharacteristic(NUS_RX);
+    setUI(true);
+    log('linked to ' + device.name, true);
+  } catch (e) {
+    log('failed: ' + e.message);
+  }
+}
+
+async function sendCmd(cmd) {
+  if (!rxChar) { log('not connected.'); return; }
+  try {
+    const data = new TextEncoder().encode(cmd);
+    // chunk to 20 bytes for BLE MTU safety
+    for (let i = 0; i < data.length; i += 20) {
+      await rxChar.writeValue(data.slice(i, i + 20));
+    }
+    log('sent: ' + cmd, true);
+  } catch (e) {
+    log('send failed: ' + e.message);
+  }
+}
+
+function sendText() {
+  const t = document.getElementById('textInput').value.trim();
+  if (t) sendCmd(t);
+}
+document.getElementById('textInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendText();
+});
+
+function setMode(m, el) {
+  sendCmd('M:' + m);
+  document.querySelectorAll('.grid button').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setColor(hex, el) {
+  sendCmd('C:' + hex);
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
