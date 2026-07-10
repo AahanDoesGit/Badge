@@ -147,7 +147,7 @@ async function toggleConnect(){
     log('connecting '+device.name+'...');
     const sv=await(await device.gatt.connect()).getPrimaryService(NUS_SERVICE);
     rxChar=await sv.getCharacteristic(NUS_RX);
-    setUI(true); simSet('scroll','name'); log('linked: '+device.name,true);
+    setUI(true); simSet('eyes','eyes'); log('linked: '+device.name,true);
   }catch(e){log('failed: '+e.message);}
 }
 async function sendCmd(cmd){
@@ -381,11 +381,7 @@ S.pulse=t=>{
   const v=(Math.sin(t/900)*.5+.5)*.6+.05,[r,g,b]=fc();
   for(let x=0;x<W;x++)for(let y=0;y<H;y++)setP(x,y,r*v,g*v,b*v);
 };
-S.breathe=t=>{
-  clearBuf();
-  const a=.4,px=((Math.sin(t/3000)*.5+.5)*(W-1))|0,[r,g,b]=fc();
-  setP(px,4,r*a,g*a,b*a);
-};
+S.breathe=()=>{clearBuf();};   // standby: all LEDs off
 const CYCLE=['rain','plasma','fire','sparkle','shapes','life','bounce','eq','radar','comet','stars','pulse','eyes'];
 S.cycle=t=>{
   if(t>cycAt){cyc=(cyc+1)%CYCLE.length;cycAt=t+6000;clearBuf();}
