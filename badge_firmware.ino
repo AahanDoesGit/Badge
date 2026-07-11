@@ -144,17 +144,17 @@ uint8_t fontCol(char c, uint8_t col) {
 }
 
 // ---------------- SCROLLER ----------------
-// vertical: text enters at the top and scrolls down,
-// one upright letter per 8 rows, centered in the 8-px width
+// vertical: letters fall downward in message order — the first letter
+// enters at the top first, the next follows above it, so the text is
+// read in sending order as it flows down. One upright letter per 8 rows.
 int scrollOffset;
 int textPixelHeight(const String &s) { return s.length() * 8; } // 7px + 1 gap
 
 // returns true when one full pass is complete
 bool drawScrollFrame(const String &s) {
   FastLED.clear();
-  int yStart = scrollOffset - textPixelHeight(s);  // enters top, moves down
   for (uint16_t ci = 0; ci < s.length(); ci++) {
-    int cy = yStart + ci * 8;
+    int cy = scrollOffset - (ci + 1) * 8;          // char 0 leads the fall
     if (cy <= -8 || cy >= HEIGHT) continue;
     for (uint8_t col = 0; col < 5; col++) {
       uint8_t bits = fontCol(s[ci], col);
