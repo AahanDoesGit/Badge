@@ -68,6 +68,11 @@
   input[type=color]::-webkit-color-swatch { border:none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--green); cursor:pointer; }
 
+  .tog { position:relative; width:30px; height:16px; border-radius:8px; background:var(--line); cursor:pointer; transition:background .2s; float:right; }
+  .tog::after { content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:var(--dim); transition:all .2s; }
+  .tog.on { background:rgba(57,255,20,.25); }
+  .tog.on::after { left:16px; background:var(--green); box-shadow:0 0 8px rgba(57,255,20,.8); }
+
   .sw { display:flex; gap:18px; }
   .sw div { width:14px; height:14px; border-radius:50%; cursor:pointer; opacity:.55; transition:all .15s; }
   .sw div.active { opacity:1; box-shadow:0 0 10px -1px currentColor; transform:scale(1.15); }
@@ -110,11 +115,14 @@
   </div>
 
   <div class="sec">
-    <div class="lbl">draw <span class="v" id="drawTog" onclick="toggleDraw()" style="cursor:pointer">off</span></div>
-    <div class="row" id="drawTools" style="display:none">
-      <input type="color" id="drawColor" value="#39ff14">
-      <span style="flex:1;font-size:9px;letter-spacing:2px;color:var(--dim);align-self:center">tap grid to paint &middot; tap again to erase</span>
-      <button onclick="clearDraw()">clear</button>
+    <div class="lbl">draw <div class="tog" id="drawTog" onclick="toggleDraw()"></div></div>
+    <div id="drawTools" style="display:none">
+      <div class="sw" id="drawSw" style="margin-bottom:16px"></div>
+      <div class="row">
+        <input type="color" id="drawColor" value="#39ff14" oninput="setDrawColor(this.value.slice(1),null)">
+        <span style="flex:1;font-size:8px;letter-spacing:2px;color:var(--dim);align-self:center">tap grid to paint &middot; tap again to erase</span>
+        <button onclick="clearDraw()">clear</button>
+      </div>
     </div>
   </div>
 
@@ -449,13 +457,22 @@ function draw(now){
 requestAnimationFrame(frame);
 
 /* ---------- draw mode ---------- */
-let drawOn=false,painting=false,lastCell=-1;
+let drawOn=false,painting=false,lastCell=-1,drawHex='39ff14';
 S.draw=()=>{};                      // canvas is static; buf holds the drawing
+
+// same palette as the color section below
+document.getElementById('drawSw').innerHTML=COLORS.map((h,i)=>
+  `<div style="background:#${h};color:#${h}" ${i===0?'class="active"':''} onclick="setDrawColor('${h}',this)"></div>`).join('');
+function setDrawColor(h,el){
+  drawHex=h.toLowerCase();
+  document.querySelectorAll('#drawSw div').forEach(s=>s.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
 
 function setDrawUI(on){
   drawOn=on;painting=false;lastCell=-1;
-  document.getElementById('drawTog').textContent=on?'on':'off';
-  document.getElementById('drawTools').style.display=on?'flex':'none';
+  document.getElementById('drawTog').classList.toggle('on',on);
+  document.getElementById('drawTools').style.display=on?'block':'none';
   cv.style.touchAction=on?'none':'auto';
   cv.style.cursor=on?'crosshair':'default';
 }
@@ -477,7 +494,7 @@ function paint(e,start){
   const id=c.y*W+c.x;
   if(!start&&id===lastCell)return;
   lastCell=id;
-  let hex=document.getElementById('drawColor').value.slice(1);
+  let hex=drawHex;
   let r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255;
   const i=id*3;
   const same=Math.abs(buf[i]-r)<.02&&Math.abs(buf[i+1]-g)<.02&&Math.abs(buf[i+2]-b)<.02;
