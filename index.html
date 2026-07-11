@@ -174,7 +174,7 @@ const MODES=[
   ['name',0,'scroll'],['eyes',1,'eyes'],['rain',3,'rain'],['plasma',4,'plasma'],
   ['fire',5,'fire'],['sparkle',6,'sparkle'],['shapes',8,'shapes'],['life',9,'life'],
   ['bounce',10,'bounce'],['eq',11,'eq'],['radar',12,'radar'],['comet',13,'comet'],
-  ['stars',14,'stars'],['pulse',15,'pulse'],['cycle',7,'cycle']
+  ['stars',14,'stars'],['pulse',15,'pulse'],['nyan',16,'nyan'],['cycle',7,'cycle']
 ];
 const COLORS=['39FF14','00E5FF','FF0044','FFB000','B14CFF','FFFFFF'];
 
@@ -382,7 +382,22 @@ S.pulse=t=>{
   for(let x=0;x<W;x++)for(let y=0;y<H;y++)setP(x,y,r*v,g*v,b*v);
 };
 S.breathe=()=>{clearBuf();};   // standby: all LEDs off
-const CYCLE=['rain','plasma','fire','sparkle','shapes','life','bounce','eq','radar','comet','stars','pulse','eyes'];
+const NSPR=[[0,1,0,0,0,0,1,0],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,3,1,1,1,1,3,0],
+            [4,4,4,4,4,4,4,4],[4,5,5,6,5,5,5,4],[4,5,6,5,5,6,5,4],[4,5,5,5,6,5,5,4],[4,4,4,4,4,4,4,4]];
+const NPAL=[null,[.55,.55,.55],[1,1,1],[1,.47,.59],[.92,.67,.31],[1,.31,.67],[.78,.12,.35]];
+const NRB=[[1,0,0],[1,.35,0],[1,.86,0],[0,.86,.16],[0,.35,1],[.59,0,1]];
+S.nyan=t=>{
+  clearBuf();
+  const wob=y=>{const s=Math.sin(t/1500*2*Math.PI+y*.79);return s>.33?1:s<-.33?-1:0;};
+  for(let y=9;y<H;y++){const o=wob(y);for(let c=0;c<6;c++)setP(1+c+o,y,...NRB[c]);}
+  const co=wob(9);
+  for(let r=0;r<9;r++)for(let x=0;x<8;x++){
+    let k=NSPR[r][x];if(!k)continue;
+    if(k===6&&((t/250|0)&1))k=5;
+    setP(x+co,r,...NPAL[k]);
+  }
+};
+const CYCLE=['rain','plasma','fire','sparkle','shapes','life','bounce','eq','radar','comet','stars','pulse','nyan','eyes'];
 S.cycle=t=>{
   if(t>cycAt){cyc=(cyc+1)%CYCLE.length;cycAt=t+6000;clearBuf();}
   S[CYCLE[cyc]](t);
@@ -390,7 +405,7 @@ S.cycle=t=>{
 
 /* ---------- render ---------- */
 let lastStep=0;
-const IV={plasma:33,scroll:80,rain:70,life:150,radar:70,comet:25,breathe:50};
+const IV={plasma:33,scroll:80,rain:70,life:150,radar:70,comet:25,breathe:50,nyan:50};
 function frame(now){
   let m=simMode;
   const iv=IV[m==='cycle'?CYCLE[cyc]:m]||45;

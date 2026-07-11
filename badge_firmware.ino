@@ -12,6 +12,7 @@
  *   7 = Auto-cycle (rotates all animations every 10s)
  *   8 = Shapes  9 = Game of Life  10 = Bounce  11 = Equalizer
  *   12 = Radar  13 = Comet        14 = Stars   15 = Pulse
+ *   16 = Nyan cat (waving rainbow trail)
  *
  * BLE (Nordic UART Service — use "Serial Bluetooth Terminal" app
  * or nRF Connect on phone, no custom app needed):
@@ -49,7 +50,8 @@ uint8_t brightness = 30;
 
 // ---------------- STATE ----------------
 enum Mode { MODE_NAME, MODE_EYES, MODE_TEXT, MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_CYCLE,
-            MODE_SHAPES, MODE_LIFE, MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE };
+            MODE_SHAPES, MODE_LIFE, MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE,
+            MODE_NYAN };
 volatile Mode mode = MODE_EYES;   // boot into idle eyes (no text until sent)
 String bleText = "";
 volatile bool newBleMsg = false;
@@ -434,6 +436,51 @@ void drawStarsFrame() {
   FastLED.show();
 }
 
+// 16: Nyan cat — head up top, pop-tart body, rainbow trail waving below
+// 0=off 1=gray 2=eye 3=cheek 4=tart crust 5=frosting 6=sprinkle
+const uint8_t nyanSprite[9][8] PROGMEM = {
+  {0,1,0,0,0,0,1,0},
+  {0,1,1,1,1,1,1,0},
+  {0,1,2,1,1,2,1,0},
+  {0,3,1,1,1,1,3,0},
+  {4,4,4,4,4,4,4,4},
+  {4,5,5,6,5,5,5,4},
+  {4,5,6,5,5,6,5,4},
+  {4,5,5,5,6,5,5,4},
+  {4,4,4,4,4,4,4,4},
+};
+
+int8_t nyanWob(uint32_t t, uint8_t y) {          // -1/0/+1 wave offset
+  uint8_t s = sin8((uint8_t)(t / 6 + y * 32));
+  return (s > 170) ? 1 : (s < 86 ? -1 : 0);
+}
+
+void drawNyanFrame() {
+  FastLED.clear();
+  uint32_t t = millis();
+  static const CRGB pal[7] = {
+    CRGB::Black, CRGB(140,140,140), CRGB(255,255,255), CRGB(255,120,150),
+    CRGB(235,170,80), CRGB(255,80,170), CRGB(200,30,90)
+  };
+  static const CRGB rb[6] = {
+    CRGB(255,0,0), CRGB(255,90,0), CRGB(255,220,0),
+    CRGB(0,220,40), CRGB(0,90,255), CRGB(150,0,255)
+  };
+  for (uint8_t y = 9; y < HEIGHT; y++) {         // waving rainbow trail
+    int8_t off = nyanWob(t, y);
+    for (uint8_t c = 0; c < 6; c++) setPx(1 + c + off, y, rb[c]);
+  }
+  int8_t catOff = nyanWob(t, 9);                 // cat bobs with trail top
+  for (uint8_t r = 0; r < 9; r++)
+    for (uint8_t x = 0; x < 8; x++) {
+      uint8_t k = pgm_read_byte(&nyanSprite[r][x]);
+      if (!k) continue;
+      if (k == 6 && ((t / 250) & 1)) k = 5;      // sprinkles twinkle
+      setPx(x + catOff, r, pal[k]);
+    }
+  FastLED.show();
+}
+
 // 15: Pulse — whole panel breathing in fgColor
 void drawPulseFrame() {
   uint8_t v = beatsin8(16, 8, 160);
@@ -489,7 +536,7 @@ void handleBleMsg() {
     fgColor = CRGB((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
   } else if (msg.startsWith("M:")) {
     int m = msg.substring(2).toInt();
-    if (m >= 0 && m <= 15) { mode = (Mode)m; scrollOffset = 0; }
+    if (m >= 0 && m <= 16) { mode = (Mode)m; scrollOffset = 0; }
   } else {
     bleText = msg;
     mode = MODE_TEXT;
@@ -541,7 +588,8 @@ void loop() {
       static uint32_t nextSwitch = 0;
       static const Mode subs[] = {
         MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_SHAPES, MODE_LIFE,
-        MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE, MODE_EYES
+        MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE,
+        MODE_NYAN, MODE_EYES
       };
       if (millis() > nextSwitch) {
         sub = (sub + 1) % (sizeof(subs) / sizeof(subs[0]));
@@ -574,6 +622,7 @@ void runAnim(Mode m) {
     case MODE_COMET:   drawCometFrame();   delay(25);  break;
     case MODE_STARS:   drawStarsFrame();   delay(40);  break;
     case MODE_PULSE:   drawPulseFrame();   delay(30);  break;
+    case MODE_NYAN:    drawNyanFrame();    delay(50);  break;
     default: break;
   }
 }
