@@ -63,6 +63,9 @@
   #modes button:active { color:var(--text); }
 
   input[type=range] { width:100%; -webkit-appearance:none; appearance:none; height:1px; background:var(--line); outline:none; }
+  input[type=color] { -webkit-appearance:none; appearance:none; width:36px; height:26px; background:none; border:1px solid var(--line); border-radius:0; padding:2px; cursor:pointer; }
+  input[type=color]::-webkit-color-swatch-wrapper { padding:0; }
+  input[type=color]::-webkit-color-swatch { border:none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--green); cursor:pointer; }
 
   .sw { display:flex; gap:18px; }
@@ -107,6 +110,15 @@
   </div>
 
   <div class="sec">
+    <div class="lbl">draw <span class="v" id="drawTog" onclick="toggleDraw()" style="cursor:pointer">off</span></div>
+    <div class="row" id="drawTools" style="display:none">
+      <input type="color" id="drawColor" value="#39ff14">
+      <span style="flex:1;font-size:9px;letter-spacing:2px;color:var(--dim);align-self:center">tap grid to paint &middot; tap again to erase</span>
+      <button onclick="clearDraw()">clear</button>
+    </div>
+  </div>
+
+  <div class="sec">
     <div class="lbl">brightness <span class="v" id="bVal">30</span></div>
     <input type="range" id="bSlider" min="5" max="150" value="30"
       oninput="uiBrightness(this.value)" onchange="sendCmd('B:'+this.value)">
@@ -135,7 +147,7 @@ function setUI(c){
   document.getElementById('dot').classList.toggle('on',c);
   document.getElementById('statusText').textContent=c?'linked':'standby';
   document.getElementById('controls').classList.toggle('hidden',!c);
-  if(!c) simSet('breathe','idle');
+  if(!c){setDrawUI(false);simSet('breathe','idle');}
 }
 async function toggleConnect(){
   if(device&&device.gatt.connected){device.gatt.disconnect();return;}
@@ -161,6 +173,7 @@ async function sendCmd(cmd){
 function sendText(){
   const t=document.getElementById('textInput').value.trim();
   if(!t)return;
+  if(drawOn)setDrawUI(false);
   sendCmd(t); simText=t.toUpperCase(); simSet('scroll','text');
   document.querySelectorAll('#modes button').forEach(b=>b.classList.remove('active'));
 }
@@ -184,6 +197,7 @@ document.getElementById('swatches').innerHTML=COLORS.map((h,i)=>
   `<div style="background:#${h};color:#${h}" ${i===0?'class="active"':''} onclick="pickColor('${h}',this)"></div>`).join('');
 
 function pickMode(i,el){
+  if(drawOn)setDrawUI(false);
   const [n,m,s]=MODES[i];
   sendCmd('M:'+m);
   document.querySelectorAll('#modes button').forEach(b=>b.classList.remove('active'));
@@ -433,6 +447,47 @@ function draw(now){
   }
 }
 requestAnimationFrame(frame);
+
+/* ---------- draw mode ---------- */
+let drawOn=false,painting=false,lastCell=-1;
+S.draw=()=>{};                      // canvas is static; buf holds the drawing
+
+function setDrawUI(on){
+  drawOn=on;painting=false;lastCell=-1;
+  document.getElementById('drawTog').textContent=on?'on':'off';
+  document.getElementById('drawTools').style.display=on?'flex':'none';
+  cv.style.touchAction=on?'none':'auto';
+  cv.style.cursor=on?'crosshair':'default';
+}
+function toggleDraw(){
+  const on=!drawOn;
+  setDrawUI(on);
+  document.querySelectorAll('#modes button').forEach(b=>b.classList.remove('active'));
+  if(on){simSet('draw','draw');sendCmd('M:17');}
+  else{simSet('eyes','eyes');sendCmd('M:1');}
+}
+function clearDraw(){clearBuf();sendCmd('P:C');}
+function cellFromEvt(e){
+  const r=cv.getBoundingClientRect();
+  const x=Math.floor((e.clientX-r.left)/r.width*W),y=Math.floor((e.clientY-r.top)/r.height*H);
+  return(x>=0&&x<W&&y>=0&&y<H)?{x,y}:null;
+}
+function paint(e,start){
+  const c=cellFromEvt(e);if(!c)return;
+  const id=c.y*W+c.x;
+  if(!start&&id===lastCell)return;
+  lastCell=id;
+  let hex=document.getElementById('drawColor').value.slice(1);
+  let r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255;
+  const i=id*3;
+  const same=Math.abs(buf[i]-r)<.02&&Math.abs(buf[i+1]-g)<.02&&Math.abs(buf[i+2]-b)<.02;
+  if(start&&same){r=g=b=0;hex='000000';}   // tap a painted pixel to erase it
+  buf[i]=r;buf[i+1]=g;buf[i+2]=b;
+  if(rxChar)sendCmd('P:'+c.x.toString(16)+c.y.toString(16)+hex);
+}
+cv.addEventListener('pointerdown',e=>{if(!drawOn)return;painting=true;lastCell=-1;cv.setPointerCapture(e.pointerId);paint(e,true);e.preventDefault();});
+cv.addEventListener('pointermove',e=>{if(drawOn&&painting)paint(e,false);});
+cv.addEventListener('pointerup',()=>{painting=false;});
 </script>
 </body>
 </html>

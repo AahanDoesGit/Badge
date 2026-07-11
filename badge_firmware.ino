@@ -13,13 +13,15 @@
  *   8 = Shapes  9 = Game of Life  10 = Bounce  11 = Equalizer
  *   12 = Radar  13 = Comet        14 = Stars   15 = Pulse
  *   16 = Nyan cat (waving rainbow trail)
+ *   17 = Draw canvas (webpage paints pixels live)
  *
  * BLE (Nordic UART Service — use "Serial Bluetooth Terminal" app
  * or nRF Connect on phone, no custom app needed):
  *   Send any text        -> scrolls it (switches to mode 2)
  *   B:40                 -> brightness 0-255
  *   C:39FF14             -> hex color (neon green default)
- *   M:0 ... M:7          -> force mode
+ *   M:0 ... M:17         -> force mode
+ *   P:xyRRGGBB           -> draw one pixel (x,y hex digits), P:C clears
  *
  * Libraries: FastLED >= 3.7, ESP32 Arduino core >= 3.1 (C6 support)
  * Board: "ESP32C6 Dev Module"
@@ -51,7 +53,7 @@ uint8_t brightness = 30;
 // ---------------- STATE ----------------
 enum Mode { MODE_NAME, MODE_EYES, MODE_TEXT, MODE_RAIN, MODE_PLASMA, MODE_FIRE, MODE_SPARKLE, MODE_CYCLE,
             MODE_SHAPES, MODE_LIFE, MODE_BOUNCE, MODE_EQ, MODE_RADAR, MODE_COMET, MODE_STARS, MODE_PULSE,
-            MODE_NYAN };
+            MODE_NYAN, MODE_DRAW };
 volatile Mode mode = MODE_EYES;   // boot into idle eyes (no text until sent)
 String bleText = "";
 volatile bool newBleMsg = false;
@@ -495,9 +497,31 @@ void drawPulseFrame() {
 #define NUS_RX      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NUS_TX      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
+volatile bool drawDirty = false;
+
+uint8_t hexVal(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  return 0;
+}
+
 class RxCallback : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *ch) override {
     String v = ch->getValue();
+    // P: pixel commands are applied immediately so fast draw strokes
+    // aren't dropped by the single-message buffer
+    if (v.length() >= 3 && v[0] == 'P' && v[1] == ':') {
+      if (v.length() >= 10) {
+        uint8_t x = hexVal(v[2]), y = hexVal(v[3]);
+        uint32_t col = strtoul(v.substring(4, 10).c_str(), NULL, 16);
+        setPx(x, y, CRGB((col >> 16) & 0xFF, (col >> 8) & 0xFF, col & 0xFF));
+      } else if (v[2] == 'C' || v[2] == 'c') {
+        FastLED.clear();
+      }
+      drawDirty = true;
+      return;
+    }
     if (v.length()) { bleBuf = String(v.c_str()); newBleMsg = true; }
   }
 };
@@ -536,7 +560,10 @@ void handleBleMsg() {
     fgColor = CRGB((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
   } else if (msg.startsWith("M:")) {
     int m = msg.substring(2).toInt();
-    if (m >= 0 && m <= 16) { mode = (Mode)m; scrollOffset = 0; }
+    if (m >= 0 && m <= 17) {
+      mode = (Mode)m; scrollOffset = 0;
+      if (mode == MODE_DRAW) { FastLED.clear(); drawDirty = true; }  // fresh canvas
+    }
   } else {
     bleText = msg;
     mode = MODE_TEXT;
@@ -599,6 +626,11 @@ void loop() {
       runAnim(subs[sub]);
       break;
     }
+
+    case MODE_DRAW:   // canvas persists; BLE P: commands paint pixels
+      if (drawDirty) { drawDirty = false; FastLED.show(); }
+      delay(10);
+      break;
 
     default:          // all plain animation modes
       runAnim(mode);
