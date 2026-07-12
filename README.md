@@ -77,11 +77,6 @@ Everything is a short text write to the NUS RX characteristic
 | `P:C`        | clear the draw canvas |
 | any text     | scroll it |
 
-## Docs
-
-- [`docs/INSTRUCTABLE.md`](docs/INSTRUCTABLE.md) — full step-by-step build guide
-- [`docs/CODE_EXPLAINED.md`](docs/CODE_EXPLAINED.md) — every function of both files explained
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
