@@ -127,7 +127,7 @@ matter:
 ## Step 5: Flash the Firmware
 
 1. Grab the code: https://github.com/AahanDoesGit/Badge — you need
-   `badge_firmware.ino`.
+   `firmware/badge_firmware/badge_firmware.ino`.
 2. Open it in Arduino IDE. At the top, personalize:
 
 ```cpp
