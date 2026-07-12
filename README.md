@@ -53,7 +53,7 @@ panel's power. Feed the panel real 5V — undervolting causes faint blue ghostin
 #define DATA_PIN    0      // your data GPIO
 #define SERPENTINE  false  // flip if text splits to both sides
 #define ROTATE_180  false  // flip if everything is upside-down
-#define NAME_TEXT   "Aahans"
+#define NAME_TEXT   "YOURNAME"
 ```
 
 - Upload. The eye should appear.

@@ -134,7 +134,7 @@ matter:
 #define DATA_PIN      0         // GPIO your matrix data is on
 #define SERPENTINE    false     // see Step 6 if your text looks scrambled
 #define ROTATE_180    false     // flip if everything is upside-down
-#define NAME_TEXT     "Aahans"  // your name for name-scroll mode
+#define NAME_TEXT     "YOURNAME" // your name for name-scroll mode
 ```
 
    And your Bluetooth name in `setupBLE()`:

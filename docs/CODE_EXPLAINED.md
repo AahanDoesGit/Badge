@@ -22,7 +22,7 @@ This document goes through both, part by part.
 #define NUM_LEDS      (PANEL_W * PANEL_H)   // 128
 #define SERPENTINE    false // true if odd rows are wired right-to-left
 #define ROTATE_180    false // flip everything if mounted upside-down
-#define NAME_TEXT     "Aahans"  // what "name" mode scrolls
+#define NAME_TEXT     "YOURNAME"  // what "name" mode scrolls
 #define SCROLL_MS     70    // ms per scroll step (lower = faster)
 #define EYES_DWELL_MS 8000  // how long eyes show between name scrolls
 ```

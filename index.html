@@ -210,7 +210,7 @@ function pickMode(i,el){
   sendCmd('M:'+m);
   document.querySelectorAll('#modes button').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  if(m===0)simText='AAHANS';
+  if(m===0)simText='HELLO';
   simSet(s,n);
 }
 function pickColor(hex,el){
@@ -225,7 +225,7 @@ document.getElementById('textInput').addEventListener('keydown',e=>{if(e.key==='
 const W=8,H=16;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 let buf=new Float32Array(W*H*3);
-let simMode='breathe',simText='AAHANS',simColor=[57,255,20],simGain=0.65;
+let simMode='breathe',simText='HELLO',simColor=[57,255,20],simGain=0.65;
 let sOff=0;
 
 const FDATA={

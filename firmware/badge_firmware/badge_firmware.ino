@@ -42,7 +42,7 @@
 #define NUM_LEDS      (PANEL_W * PANEL_H)
 #define SERPENTINE    false     // false if your PCB is progressive-wired
 #define ROTATE_180    false     // flip display 180° (panel mounted upside-down)
-#define NAME_TEXT     "Aahans"
+#define NAME_TEXT     "HELLO"
 #define SCROLL_MS     70        // lower = faster scroll
 #define EYES_DWELL_MS 8000      // eyes duration between name scrolls
 
