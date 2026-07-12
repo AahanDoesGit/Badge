@@ -6,7 +6,7 @@ you can connect over Bluetooth (no app, just a web page) to scroll messages,
 play animations, or draw pixel art on it live.
 
 **Live controller:** enable GitHub Pages on this repo and open
-`https://<AahanDoesGit>.github.io/Badge/` — works in Chrome (Android /
+— works in Chrome (Android /
 desktop) and the Bluefy app (iPhone / iPad).
 
 ## Features
